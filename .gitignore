@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 *.csv
+multiple_carriers.csv
+prey_spectra_all_carriers.csv
