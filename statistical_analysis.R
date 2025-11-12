@@ -1,5 +1,7 @@
 library(ggplot2)
 library(effectsize)
+library(tidyvers)
+library(dplyr)
 
 #reading in data
 df <- read.delim(
@@ -53,29 +55,44 @@ df <- read.delim(
   dec = "." # <-- very important for comma decimals
 ) 
 
-####df might not set right. TO DO SET DF AND STRUCTURE FROM HERRE ON 
 
-              #Prey Shape (prey length/prey width) 
+############## Prey Shape (prey length/prey width) 
 # index of how long and thin or short and fat prey items are
+df["prey_shape"] <- df$log_prey_length / df$log_prey_width
 
-df_log["prey_shape"] <- df$prey_length / df$prey_width
-
-              #Ant Size (ant length*ant width)
+############## Ant Size (ant length*ant width)
 # gives the total rectangular 2-dimensional area each ant occupies
-df_index["ant_size"] <- df$ant_length / df$ant_width
+df["ant_size"] <- df$log_ant_length / df$log_ant_width
 
-              #Ant loading (prey weight / ant weight)
+############## Ant loading (prey weight / ant weight)
 # Measure of how much an ant carries per unit mass of the ant
 # It´s calculated for single and multiple carriers
-df_index["ant_loading"] <- df$prey_weight / df$ant_weight
+df["ant_loading"] <- df$log_prey_weight / df$log_ant_weight
 
-              #Relative loading
 
+#creating new df´s for carrier specific calculatins
+df_single <- df %>%
+  filter (total_ant_number == 1) #only single carrier
+
+df_multi <- df %>% 
+  filter(total_ant_number > 1)  #only multiple carrier
+
+
+############## Relative loading single (loading / ant weight)
+# relative measure of how heavily loaded ants are relative to their weight.
+# single carriers only
+df_single["relativ_loading"] <- df_single$ant_loading / df_single$ant_weight
+
+
+############## Relative loading multi (loading / ant weight)
+# relative measure of how heavily loaded ants are relative to their weight.
+# multi carriers only
+df_multi["realative_loading"] <- df_multi$ant_loading / df_multi$ant_loading
 
 
 #### Size differences between ant species ####
 
-# Welch t-test (Standard in R)
+# Welch t-test 
 t.test(ant_length ~ ant_species, data = df)
 
 # Effektgröße (Cohen’s d)
@@ -87,7 +104,9 @@ hist(df$ant_length, main = "Length", col = "grey")
 hist(df$ant_width,  main = "Width",  col = "grey")
 hist(df$ant_weight, main = "Weight", col = "grey")
 
-# oder Boxplots nach Art
+# Box plot by species
 boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species")
 boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species")
 boxplot(ant_weight~ ant_species, data = df, main = "Ant weight by species")
+
+
