@@ -51,12 +51,17 @@ ggplot(all_df, aes(x = ant_length, y = ant_width)) +
     title = "Length–width relationship by Dorylus species"
   )
 
+
+
+
 #=============================================================================#
                       #### Linear Regression models #### 
 #=============================================================================#
 
+
+
 #Ant weight vs prey weight (single workers)###################################
-#This is the plot showing the lm1
+#This is the plot showing the lm3
 #Regression line shoulde be for bothe species sinces species has no sig. effect
 
 ggplot(df_single, aes(x = log_ant_weight, y = log_prey_weight,
@@ -65,13 +70,13 @@ ggplot(df_single, aes(x = log_ant_weight, y = log_prey_weight,
   geom_point(alpha = 0.7, size = 0.7) +  
   
 #regression line, se sets confidence area 
-  geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.8) +
+  geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.7) +
 
 #add horizontel reference line   
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
   
 #set colour scheme 
-  scale_color_manual(values = c("#E69F00", "#56B4E9")) 
+  scale_color_manual(values = c("#E69F00", "#56B4E9")) +
 
 #Add description and legend
   labs(
@@ -87,6 +92,38 @@ ggplot(df_single, aes(x = log_ant_weight, y = log_prey_weight,
     axis.title = element_text(size = 14),
     axis.text = element_text(size = 12)
   )
+  
   #TO DO: CONVERT g TO mg FOR NICER SCALING. (TILL THEN LEGEND WRONG)
   #       Check for used model (is it the right one?)
 
+  
+#Relative load vs. Carrier size (single workers)###############################
+#NOTHING WORKS HERE !!!!!!!!!!!!!!!!!!!!!
+  ggplot(df_single, aes(x = ant_size, y = relativ_loading,
+                        color = ant_species)) +
+    #sets points  
+    geom_point(alpha = 0.7, size = 0.7) +  
+    
+    #regression line, se sets confidence area 
+    geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.8) +
+    
+    #add horizontel reference line   
+    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
+    
+    #set colour scheme 
+    scale_color_manual(values = c("#E69F00", "#56B4E9")) 
+  
+  #Add description and legend
+  labs(
+    x = "Ant size",
+    y = "Relative loading",
+    color = "Dorylus"
+  ) +
+    theme_classic(base_size = 14) +
+    theme(
+      legend.position = "right",
+      legend.title = element_text(size = 14),
+      legend.text = element_text(size = 12),
+      axis.title = element_text(size = 14),
+      axis.text = element_text(size = 12)
+    )
