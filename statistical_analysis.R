@@ -86,16 +86,16 @@ df_multi <- df %>%
 df_single["relativ_loading"] <- df_single$ant_loading / df_single$log_ant_weight
 
 
-############## Relative loading multi (loading / ant weight)
-# relative measure of how heavily loaded ants are relative to their weight.
+############## Load per Ant (loading / ant number)
+# mean amount carried per ant for multi-carrier prey items..
 # multi carriers only
-df_multi["realative_loading"] <- df_multi$ant_loading / df_multi$log_ant_weight
+df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
 
 
-#==============================================================================
+#==============================================================================#
                 #### Size differences between ant species #### 
-#==============================================================================
+#==============================================================================#
 
 
 #Welch t-test 
@@ -132,7 +132,7 @@ df_single <- df_single %>%
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
 
-#Ant weight vs prey weight (single workers)###################################
+#Ant weight vs prey weight (single workers)#####################################
 #base model without explaining variables
 lm1 <- lm(log_prey_weight ~ log_ant_weight, data = df_single) 
 
@@ -159,5 +159,45 @@ summary(lm3)
 confint(lm3)
 AIC(lm1, lm2, lm3)
 anova(lm2, lm3)
+
+#Relative load vs. Carrier size (single workers)################################
+#base model no main effects
+lm4 <- lm(relativ_loading ~ ant_size, data = df_single) 
+
+summary(lm4)
+confint(lm4) # 95%-Convidence intervall
+plot(lm4) 
+
+#model with only main effects
+lm5 <- lm(relativ_loading ~ ant_size + ant_species + forest_type + 
+            prey_shape, data = df_single)
+
+summary(lm5)
+confint(lm5)
+plot(lm5)
+
+#model with interacting effect specis an main effects 
+lm6 <- lm(relativ_loading ~ ant_size * ant_species + forest_type + 
+            prey_shape, data = df_single)
+
+summary(lm6)
+confint(lm6)
+AIC(lm4, lm5, lm6)
+anova(lm4, lm5, lm6)
+plot(lm6)
+
+
+#Load per ant vs ant weight + single vs multiple carriers######################
+#setting species and forest as factor (aka categorical variable)
+df_multi$ant_species <- factor(df_multi$ant_species)
+df_multi$forest_type <- factor(df_multi$forest_type)
+
+#In prey_shape and ant_size are INF (when not log transformed data == 1.00)
+#We assume the index is just 0 here to get rid of errors 
+df_multi <- df_multi %>%
+  mutate(across(c(ant_size, prey_shape),
+                ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
+
+
 
 
