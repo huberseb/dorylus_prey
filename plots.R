@@ -88,5 +88,5 @@ ggplot(df_single, aes(x = log_ant_weight, y = log_prey_weight,
     axis.text = element_text(size = 12)
   )
   #TO DO: CONVERT g TO mg FOR NICER SCALING. (TILL THEN LEGEND WRONG)
-  
+  #       Check for used model (is it the right one?)
 
