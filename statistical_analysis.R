@@ -60,16 +60,20 @@ df <- read.delim(
 
 ############## Prey Shape (prey length/prey width) 
 # index of how long and thin or short and fat prey items are
-df["prey_shape"] <- df$log_prey_length / df$log_prey_width
+df["prey_shape"] <- df$prey_length / df$prey_width
+
+############## Prey Area (prey length*prey width) 
+# index of how long and thin or short and fat prey items are
+df["prey_shape"] <- df$prey_length * df$prey_width
 
 ############## Ant Size (ant length*ant width)
 # gives the total rectangular 2-dimensional area each ant occupies
-df["ant_size"] <- df$log_ant_length / df$log_ant_width
+df["ant_size"] <- df$ant_length * df$ant_width
 
 ############## Ant loading (prey weight / ant weight)
 # Measure of how much an ant carries per unit mass of the ant
 # It´s calculated for single and multiple carriers
-df["ant_loading"] <- df$log_prey_weight / df$log_ant_weight
+df_single["ant_loading"] <- df_single$ant_weight / df_single$prey_weight
 
 
 #creating new df´s for carrier specific calculatins
@@ -83,7 +87,7 @@ df_multi <- df %>%
 ############## Relative loading single (loading / ant weight)
 # relative measure of how heavily loaded ants are relative to their weight.
 # single carriers only
-df_single["relativ_loading"] <- df_single$ant_loading / df_single$log_ant_weight
+df_single["relativ_loading"] <- df_single$ant_loading / df_single$ant_weight
 
 
 ############## Load per Ant (loading / ant number)
@@ -92,28 +96,35 @@ df_single["relativ_loading"] <- df_single$ant_loading / df_single$log_ant_weight
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
 
-
 #==============================================================================#
                 #### Size differences between ant species #### 
 #==============================================================================#
 
 
 #Welch t-test 
-t.test(ant_length ~ ant_species, data = df)
+t.test(log10(ant_length) ~ ant_species, data = df)
+t.test(log10(ant_weight*1000) ~ ant_species, data = df)
+t.test(log10(ant_width) ~ ant_species, data = df)
 
 #Effektgröße (Cohen’s d)
+cohens_d(log10(ant_length) ~ ant_species, data = df)
+cohens_d(log10(ant_weight*1000) ~ ant_species, data = df)
+cohens_d(log10(ant_width) ~ ant_species, data = df)
 
-cohens_d(ant_length ~ ant_species, data = df)
 
 par(mfrow = c(1, 3))
-hist(df$ant_length, main = "Length", col = "grey")
-hist(df$ant_width,  main = "Width",  col = "grey")
-hist(df$ant_weight, main = "Weight", col = "grey")
+hist(df$ant_length, main = "Ant length", col = "grey", xlab = "length [mm]", ylim = c(0, 1000))
+hist(df$ant_width,  main = "Ant width [mm]",  col = "grey", xlab = "width [mm]", ylim = c(0, 1000))
+hist((1000*df$ant_weight), main = "Ant weight", col = "grey", xlab = "Weight [mg]", ylim = c(0, 2500))
 
 #Box plot by species
-boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species")
-boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species")
-boxplot(ant_weight~ ant_species, data = df, main = "Ant weight by species")
+boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species",
+        ylab = "Ant length [mm]", xlab = "")
+boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species",
+        ylab = "Ant width [mm]", xlab = "")
+boxplot((1000*ant_weight)~ ant_species, data = df, main = "Ant weight by species",
+        ylab = "Ant weight [mg]", xlab = "")
+
 
 
 
@@ -160,16 +171,16 @@ confint(lm3)
 AIC(lm1, lm2, lm3)
 anova(lm2, lm3)
 
-#Relative load vs. Carrier size (single workers)################################
+#Relative load vs. Ant weight (single workers)################################
 #base model no main effects
-lm4 <- lm(relativ_loading ~ ant_size, data = df_single) 
+lm4 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
 
 summary(lm4)
 confint(lm4) # 95%-Convidence intervall
 plot(lm4) 
 
 #model with only main effects
-lm5 <- lm(relativ_loading ~ ant_size + ant_species + forest_type + 
+lm5 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type + 
             prey_shape, data = df_single)
 
 summary(lm5)
@@ -177,7 +188,7 @@ confint(lm5)
 plot(lm5)
 
 #model with interacting effect specis an main effects 
-lm6 <- lm(relativ_loading ~ ant_size * ant_species + forest_type + 
+lm6 <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + forest_type + 
             prey_shape, data = df_single)
 
 summary(lm6)
