@@ -87,7 +87,7 @@ df_multi <- df %>%
 ############## Relative loading single (loading / ant weight)
 # relative measure of how heavily loaded ants are relative to their weight.
 # single carriers only
-df_single["relativ_loading"] <- df_single$ant_loading / df_single$ant_weight
+df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weight)
 
 
 ############## Load per Ant (loading / ant number)
@@ -125,7 +125,11 @@ boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species",
 boxplot((1000*ant_weight)~ ant_species, data = df, main = "Ant weight by species",
         ylab = "Ant weight [mg]", xlab = "")
 
+# Ant length vs. ants width for BOTH species###########################
+ant_biometrics <- lm(log10(ant_length) ~ log10(ant_width) * ant_species + forest_type , data = df)
 
+summary(ant_biometrics)
+confint(ant_biometrics)
 
 
 #==============================================================================
@@ -177,7 +181,7 @@ lm4 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single)
 
 summary(lm4)
 confint(lm4) # 95%-Convidence intervall
-plot(lm4) 
+#plot(lm4) 
 
 #model with only main effects
 lm5 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type + 
@@ -185,7 +189,7 @@ lm5 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type +
 
 summary(lm5)
 confint(lm5)
-plot(lm5)
+#plot(lm5)
 
 #model with interacting effect specis an main effects 
 lm6 <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + forest_type + 
@@ -195,7 +199,7 @@ summary(lm6)
 confint(lm6)
 AIC(lm4, lm5, lm6)
 anova(lm4, lm5, lm6)
-plot(lm6)
+#plot(lm6)
 
 
 #Load per ant vs ant weight + single vs multiple carriers######################
