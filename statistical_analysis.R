@@ -12,10 +12,11 @@ df <- read.delim(
   dec = "." # <-- very important for comma decimals
 )
 
-#==============================================================================
-                      #### Testing Distribution ####
-#==============================================================================
-
+#==============================================================================#
+                      #### 1. Preparation fo Data ####
+#==============================================================================#
+                     ##### 1.1 Testing Distribution ##### 
+#==============================================================================#
 #Shapiro-Wilk test 
 shapiro.test(df$ant_length)
 shapiro.test(df$ant_width)
@@ -48,8 +49,8 @@ write.csv(df_log, "all_ants_log.csv")
 
 
 #==============================================================================
-            #### Calculating important values and indexes ####
-#==============================================================================
+            ##### 1.2 Calculating important values and indexes #####
+#==============================================================================#
 #reading in data
 df <- read.delim(
   file   = "all_ants_log.csv",
@@ -95,9 +96,13 @@ df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weig
 # multi carriers only
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
+#==============================================================================
+
+                      #### 2. Ant Biometric Analysis ####
+#==============================================================================#
 
 #==============================================================================#
-                #### Size differences between ant species #### 
+                ##### 1.1 Size differences between ant species ##### 
 #==============================================================================#
 
 
@@ -131,10 +136,13 @@ ant_biometrics <- lm(log10(ant_length) ~ log10(ant_width) * ant_species + forest
 summary(ant_biometrics)
 confint(ant_biometrics)
 
+#=============================================================================#
+                      #### 3 Ant-Prey-Relationship  #### 
+#=============================================================================#
 
-#==============================================================================
-                     #### Linear Regression models #### 
-#==============================================================================
+#=============================================================================#
+                     #### 3.1 Ant-Prey-Relationship  #### 
+#=============================================================================#
 
 #setting species and forest as factor (aka categorical variable)#
 df_single$ant_species <- factor(df_single$ant_species)
