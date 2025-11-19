@@ -77,6 +77,11 @@ library(ggdist)
 library(MASS)
 library(lmtest)
 library(performance)
+library(DHARMa)
+library(lme4) #GLMM
+library(effectsize)
+library(ggeffects)
+
 
 #-----------------------------------------------------------------------------#
                     #### 1.Diet Composition by Ant Species ####
