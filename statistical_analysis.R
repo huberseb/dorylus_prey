@@ -13,9 +13,9 @@ df <- read.delim(
 )
 
 #==============================================================================#
-                      #### 1. Preparation fo Data ####
+                      ####  Preparation fo Data ####
 #==============================================================================#
-                     ##### 1.1 Testing Distribution ##### 
+#####  Testing Distribution ##### 
 #==============================================================================#
 #Shapiro-Wilk test 
 shapiro.test(df$ant_length)
@@ -48,8 +48,8 @@ write.csv(df_log, "all_ants_log.csv")
 
 
 
-#==============================================================================
-            ##### 1.2 Calculating important values and indexes #####
+#=============================================================================#
+#####  Calculating important values and indexes #####
 #==============================================================================#
 #reading in data
 df <- read.delim(
@@ -97,12 +97,11 @@ df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weig
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
 #==============================================================================
-
-                      #### 2. Ant Biometric Analysis ####
+                      #### 1. Ant Biometrics Analysis ####
 #==============================================================================#
 
 #==============================================================================#
-                ##### 1.1 Size differences between ant species ##### 
+##### 1.1 Size differences between Ant species ##### 
 #==============================================================================#
 
 
@@ -118,25 +117,154 @@ cohens_d(log10(ant_width) ~ ant_species, data = df)
 
 
 par(mfrow = c(1, 3))
-hist(df$ant_length, main = "Ant length", col = "grey", xlab = "length [mm]", ylim = c(0, 1000))
-hist(df$ant_width,  main = "Ant width [mm]",  col = "grey", xlab = "width [mm]", ylim = c(0, 1000))
-hist((1000*df$ant_weight), main = "Ant weight", col = "grey", xlab = "Weight [mg]", ylim = c(0, 2500))
+hist(df$ant_length, main = "Ant length", col = "grey",
+     xlab = "length [mm]", ylim = c(0, 1000))
+hist(df$ant_width,  main = "Ant width [mm]",  col = "grey",
+     xlab = "width [mm]", ylim = c(0, 1000))
+hist((1000*df$ant_weight), main = "Ant weight", col = "grey",
+     xlab = "Weight [mg]", ylim = c(0, 2500))
 
 #Box plot by species
 boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species",
         ylab = "Ant length [mm]", xlab = "")
 boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species",
         ylab = "Ant width [mm]", xlab = "")
-boxplot((1000*ant_weight)~ ant_species, data = df, main = "Ant weight by species",
-        ylab = "Ant weight [mg]", xlab = "")
+boxplot((1000*ant_weight)~ ant_species, data = df,
+        main = "Ant weight by species", ylab = "Ant weight [mg]", xlab = "")
 
-# Ant length vs. ants width for BOTH species###########################
-ant_biometrics <- lm(log10(ant_length) ~ log10(ant_width) * ant_species + forest_type , data = df)
 
-summary(ant_biometrics)
-confint(ant_biometrics)
+#==============================================================================#
+##### 1.2 Allometry between Ants ##### 
+#==============================================================================#
 
+###### 1.2.1 Ant length vs. ants width #####
+ant_biometrics_1 <- lm(log10(ant_length) ~ log10(ant_width) * ant_species
+                     + forest_type , data = df)
+
+summary(ant_biometrics_1)
+confint(ant_biometrics_1)
+
+###### 1.2.2 Ant length vs. ants weight #####
+ant_biometrics_2 <- lm(log10(ant_length) ~ log10(ant_weight) * ant_species
+                     + forest_type , data = df)
+
+summary(ant_biometrics_2)
+confint(ant_biometrics_2)
+
+
+
+
+
+#=============================================================================
+                      #### 2. Prey Biometrics Analysis #### 
 #=============================================================================#
+##### Preparation of raw data and setting df #####
+#reading in data
+df_dis <- read.delim(
+  file   = "prey_spectra_final.csv",
+  sep  = ";",
+  dec = "," # <-- very important for comma decimals
+)
+
+# Normalize formatting (lowercase + trim white space)
+df_dis$dismembered <- tolower(trimws(df_dis$dismembered))
+
+# Keep only valid states ("yes" / "no")
+df_dis <- df_dis %>%
+  filter(dismembered %in% c("yes", "no"))
+
+table(df_dis$dismembered)
+
+# Make sure its a factor
+df_dis$dismembered <- factor(df_dis$dismembered, levels = c("no", "yes"))
+df_dis$ant_species <- factor(df_dis$ant_species)
+df_dis$forest_type <- factor(df_dis$forest_type)
+
+# Add important factors 
+df_dis["prey_shape"] <- df_dis$prey_length / df_dis$prey_width
+df_dis["prey_area"] <- df_dis$prey_length * df_dis$prey_width
+
+#==============================================================================#
+##### 2.1 Size differences in Prey Items ##### 
+#==============================================================================#
+
+###### 2.1.1 Testing against Ants #####
+#Welch t-test 
+t.test(log10(prey_length) ~ ant_species, data = df_dis)
+t.test(log10(prey_width) ~ ant_species, data = df_dis)
+t.test(log10(prey_weight*1000) ~ ant_species, data = df_dis)
+t.test(log10(prey_shape) ~ ant_species, data = df_dis)
+t.test(log10(prey_area) ~ ant_species, data = df_dis)
+
+#Effektgröße (Cohen’s d)
+cohens_d(log10(prey_length) ~ ant_species, data = df_dis)
+cohens_d(log10(prey_width) ~ ant_species, data = df_dis)
+cohens_d(log10(prey_weight*1000) ~ ant_species, data = df_dis)
+cohens_d(log10(prey_shape) ~ ant_species, data = df_dis)
+cohens_d(log10(prey_area) ~ ant_species, data = df_dis)
+
+#Plotting the results - HIER GEHT SCHON WIEDER NIX -BS wrong comand!!
+par(mfrow = c(1, 5))
+hist(df_dis$prey_length, main = "Prey length", col = "grey",
+     xlab = "length [mm]", ylim = c(0, 1000))
+hist(df_dis$prey_width,  main = "Prey width [mm]",  col = "grey",
+     xlab = "width [mm]", ylim = c(0, 1000))
+hist((1000*df_dis$prey_weight), main = "Prey weight", col = "grey",
+     xlab = "Weight [mg]", ylim = c(0, 2500))
+hist(df_dis$prey_shape, main = "Prey Shape", col = "grey",
+     xlab = "Shape (length/width) [mm]", ylim = c(0, 1000))
+hist(df_dis$prey_area,  main = "Prey Area [mm]",  col = "grey",
+     xlab = "Prey Area [mm^2]", ylim = c(0, 1000))
+
+
+#Box plot by species
+par(mfrow = c(1, 5))
+boxplot(prey_length ~ ant_species, data = df_dis,
+        main = "Prey length by ant species", ylab = "Prey length [mm]", xlab = "")
+boxplot(prey_width ~ ant_species, data = df_dis, 
+        main = "Prey width by ant species", ylab = "Prey width [mm]", xlab = "")
+boxplot((1000*prey_weight)~ ant_species, data = df_dis,
+        main = "Prey weight by species", ylab = "Prey weight [mg]", xlab = "")
+boxplot(prey_shape ~ ant_species, data = df_dis, 
+        main = "Prey shape by ant species", ylab = "Prey shape", xlab = "")
+boxplot(prey_area ~ ant_species, data = df_dis, 
+        main = "Prey area by ant species", ylab = "Prey area [mm^2]", xlab = "")
+
+
+###### 2.1.2 Testing against Forest #####
+#Welch t-test 
+t.test(log10(prey_length) ~ forest_type, data = df_dis)
+t.test(log10(prey_width) ~ forest_type, data = df_dis)
+t.test(log10(prey_weight*1000) ~ forest_type, data = df_dis)
+t.test(log10(prey_shape) ~ forest_type, data = df_dis)
+t.test(log10(prey_area) ~ forest_type, data = df_dis)
+
+#Effektgröße (Cohen’s d)
+cohens_d(log10(prey_length) ~ forest_type, data = df_dis)
+cohens_d(log10(prey_width) ~ forest_type, data = df_dis)
+cohens_d(log10(prey_weight*1000) ~ forest_type, data = df_dis)
+cohens_d(log10(prey_shape) ~ forest_type, data = df_dis)
+cohens_d(log10(prey_area) ~ forest_type, data = df_dis)
+
+
+#Plotting the results 
+#Box plot by forest
+par(mfrow = c(1, 5))
+boxplot(prey_length ~ forest_type, data = df_dis,
+        main = "Prey length by forest type", ylab = "Prey length [mm]", xlab = "")
+boxplot(prey_width ~ forest_type, data = df_dis, 
+        main = "Prey width by forest types", ylab = "Prey width [mm]", xlab = "")
+boxplot((1000*prey_weight)~ forest_type, data = df_dis,
+        main = "Prey weight by forest types", ylab = "Prey weight [mg]", xlab = "")
+boxplot(prey_shape ~ forest_type, data = df_dis, 
+        main = "Prey shape by forest types", ylab = "Prey shape", xlab = "")
+boxplot(prey_area ~ forest_type, data = df_dis, 
+        main = "Prey area by forest types", ylab = "Prey area [mm^2]", xlab = "")
+
+
+
+
+#=============================================================================
                       #### 3 Ant-Prey-Relationship  #### 
 #=============================================================================#
 
