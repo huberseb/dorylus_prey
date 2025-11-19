@@ -197,7 +197,7 @@ plotweb(bpno[,2:26], high.spacing = 0.005, low.spacing = 0.1,
 dev.off()
 
 #-----------------------------------------------------------------------------#
-            ####2.Dismembered - Preparation for transport####
+            #### 2.Dismembered - Preparation for transport####
 #-----------------------------------------------------------------------------#
 ##### 2.1 Clean the dismembered column #####
 #reading in data
@@ -376,4 +376,31 @@ ggplot(pred, aes(x = x, y = predicted, colour = group)) +
 #-----------------------------------------------------------------------------#
                           ####3.Life stage of Pey####
 #-----------------------------------------------------------------------------#
+#analysis where made with ant species and forest typ as factor
+
+# GLM on Multivariate Abundance Data (mvabund)
+lifestage <- read.csv("prey spectra lifestage.csv", header = T)
+
+# Count number of prey in each life stage per ant species
+life_counts <- lifestage %>%
+  group_by(raid_ID, ant_species, forest_type, life_stage) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  pivot_wider(names_from = life_stage, values_from = count, values_fill = 0)
+life_counts
+
+mvprey <- mvabund(life_counts[,4:8])
+
+mod1 <- manyglm(mvprey ~ life_counts$ant_species * life_counts$forest_type,
+                family = "negative.binomial",
+                data = life_counts)
+plot.manyglm(mod1)
+plot(mod1)
+
+mvabund.aov <- anova.manyglm(mod1, p.uni = "adjusted", 
+                             resamp = "montecarlo", test = "LR")
+mvabund.aov
+
+write.table(mvabund.aov$uni.p, "mod1 p values.csv")
+write.table(mvabund.aov$uni.test, "mod1 test scores.csv")
+
 
