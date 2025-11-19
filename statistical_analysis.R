@@ -1,6 +1,6 @@
 library(ggplot2)
 library(effectsize)
-library(tidyvers)
+library(tidyverse)
 library(dplyr)
 library(lmtest)
 library(performance)
@@ -71,11 +71,6 @@ df["prey_shape"] <- df$prey_length * df$prey_width
 # gives the total rectangular 2-dimensional area each ant occupies
 df["ant_size"] <- df$ant_length * df$ant_width
 
-############## Ant loading (prey weight / ant weight)
-# Measure of how much an ant carries per unit mass of the ant
-# It´s calculated for single and multiple carriers
-df_single["ant_loading"] <- df_single$ant_weight / df_single$prey_weight
-
 
 #creating new df´s for carrier specific calculatins
 df_single <- df %>%
@@ -83,6 +78,10 @@ df_single <- df %>%
 
 df_multi <- df %>% 
   filter(total_ant_number > 1)  #only multiple carrier
+############## Ant loading (prey weight / ant weight)
+# Measure of how much an ant carries per unit mass of the ant
+# It´s calculated for single and multiple carriers
+df_single["ant_loading"] <- df_single$ant_weight / df_single$prey_weight
 
 
 ############## Relative loading single (loading / ant weight)
@@ -184,7 +183,7 @@ df_dis$forest_type <- factor(df_dis$forest_type)
 df_dis["prey_shape"] <- df_dis$prey_length / df_dis$prey_width
 df_dis["prey_area"] <- df_dis$prey_length * df_dis$prey_width
 
-#==============================================================================#
+#==============================================================================
 ##### 2.1 Size differences in Prey Items ##### 
 #==============================================================================#
 
@@ -269,10 +268,10 @@ boxplot(prey_area ~ forest_type, data = df_dis,
 #=============================================================================#
 
 #=============================================================================#
-                     #### 3.1 Ant-Prey-Relationship  #### 
+                     #### 3.1 Weight-Relationship  #### 
 #=============================================================================#
 
-#setting species and forest as factor (aka categorical variable)#
+#setting species and forest as factor (aka categorical variable)
 df_single$ant_species <- factor(df_single$ant_species)
 df_single$forest_type <- factor(df_single$forest_type)
 
@@ -284,58 +283,59 @@ df_single <- df_single %>%
 
 
 #Ant weight vs prey weight (single workers)#####################################
-#base model without explaining variables
-lm1 <- lm(log_prey_weight ~ log_ant_weight, data = df_single) 
+#base model without explaining variables 
+#weight relations for single carriers Nr.1
+weight_sc1 <- lm(log_prey_weight ~ log_ant_weight, data = df_single) 
 
-summary(lm1)
-confint(lm1) # 95%-Convidence intervall
+summary(weight_sc1 )
+confint(weight_sc1 ) # 95%-Convidence intervall
 
 #model with only main effects
-lm2 <- lm(log_prey_weight ~ log_ant_weight + ant_species + forest_type + 
+weight_sc2 <- lm(log_prey_weight ~ log_ant_weight + ant_species + forest_type + 
           prey_shape, data = df_single)
 
-summary(lm2)
-confint(lm2)
-AIC(lm1, lm2)  #compares models - Akaike Information Criterion
+summary(weight_sc2)
+confint(weight_sc2)
+AIC(weight_sc1 , weight_sc2)  #compares models - Akaike Information Criterion
 
-plot(lm2) #standard plots to check homoskedasticity, linearity, leverage
-bptest(lm2) #Breusch-Pagan-test on homoskedasticity (is Varianz in Residuals constant)
+plot(weight_sc2) #standard plots to check homoskedasticity, linearity, leverage
+bptest(weight_sc2) #Breusch-Pagan-test on homoskedasticity (is Varianz in Residuals constant)
 
 #model with interacting effect specis an main effects 
 #test this to see if slope is different when species are considered
-lm3 <- lm(log_prey_weight ~ log_ant_weight * ant_species + forest_type + 
+weight_sc3 <- lm(log_prey_weight ~ log_ant_weight * ant_species + forest_type + 
            prey_shape, data = df_single)
 
-summary(lm3)
-confint(lm3)
-AIC(lm1, lm2, lm3)
-anova(lm2, lm3)
+summary(weight_sc3)
+confint(weight_sc3)
+AIC(weight_sc1, weight_sc2, weight_sc3)
+anova(weight_sc2, weight_sc3)
 
 #Relative load vs. Ant weight (single workers)################################
 #base model no main effects
-lm4 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
+rel_load1 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
 
-summary(lm4)
-confint(lm4) # 95%-Convidence intervall
-#plot(lm4) 
+summary(rel_load1)
+confint(rel_load1) # 95%-Convidence intervall
+#plot(rel_load1) 
 
 #model with only main effects
-lm5 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type + 
+rel_load2 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type + 
             prey_shape, data = df_single)
 
-summary(lm5)
-confint(lm5)
-#plot(lm5)
+summary(rel_load2)
+confint(rel_load2)
+#plot(rel_load2)
 
 #model with interacting effect specis an main effects 
-lm6 <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + forest_type + 
+rel_load3 <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + forest_type + 
             prey_shape, data = df_single)
 
-summary(lm6)
-confint(lm6)
-AIC(lm4, lm5, lm6)
-anova(lm4, lm5, lm6)
-#plot(lm6)
+summary(rel_load3)
+confint(rel_load3)
+AIC(rel_load1, rel_load2, rel_load3)
+anova(rel_load1, rel_load2, rel_load3)
+#plot(rel_load3)
 
 
 #Load per ant vs ant weight + single vs multiple carriers######################
