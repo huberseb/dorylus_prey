@@ -390,6 +390,7 @@ life_counts
 
 mvprey <- mvabund(life_counts[,4:8])
 
+#NOTE: Still need to make it a bit more fancy and look into whats happening here
 mod1 <- manyglm(mvprey ~ life_counts$ant_species * life_counts$forest_type,
                 family = "negative.binomial",
                 data = life_counts)
