@@ -3,7 +3,9 @@ library(effectsize)
 library(tidyverse)
 library(dplyr)
 library(lmtest)
-library(performance)
+library(performance) #e.g. for ICC calculations
+library(lme4) #for LMM´s
+library(DHARMa)
 
 #reading in data
 df <- read.delim(
@@ -100,7 +102,7 @@ df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 #==============================================================================#
 
 #==============================================================================#
-##### 1.1 Size differences between Ant species ##### 
+            ##### 1.1 Size differences between Ant species ##### 
 #==============================================================================#
 
 
@@ -118,7 +120,8 @@ cohens_d(log10(ant_width) ~ ant_species, data = df)
 par(mfrow = c(1, 3))
 hist(df$ant_length, main = "Ant length", col = "grey",
      xlab = "length [mm]", ylim = c(0, 1000))
-hist(df$ant_width,  main = "Ant width [mm]",  col = "grey",
+hist(df$ant_width,  main = "Ant width [mm]",
+     col = "grey",
      xlab = "width [mm]", ylim = c(0, 1000))
 hist((1000*df$ant_weight), main = "Ant weight", col = "grey",
      xlab = "Weight [mg]", ylim = c(0, 2500))
@@ -133,15 +136,39 @@ boxplot((1000*ant_weight)~ ant_species, data = df,
 
 
 #==============================================================================#
-##### 1.2 Allometry between Ants ##### 
+            ##### 1.2 Allometry between Ants ##### 
 #==============================================================================#
-
 ###### 1.2.1 Ant length vs. ants width #####
-ant_biometrics_1 <- lm(log10(ant_length) ~ log10(ant_width) * ant_species
+
+                      # A. Linear Regression Models
+#-----------------------------------------------------------------------------#
+#base model no main effects
+ant_biomet_width1 <- lm(log10(ant_length) ~ log10(ant_width), data = df)
+
+summary(ant_biomet_width1)
+confint(ant_biomet_width1)
+
+#model with only main effects
+ant_biomet_width2 <- lm(log10(ant_length) ~ log10(ant_width) + ant_species
+                       + forest_type , data = df)
+
+summary(ant_biomet_width2)
+confint(ant_biomet_width2)
+
+#model with interacting effect specis an main effects 
+ant_biomet_width3 <- lm(log10(ant_length) ~ log10(ant_width) * ant_species
                      + forest_type , data = df)
 
-summary(ant_biometrics_1)
-confint(ant_biometrics_1)
+summary(ant_biomet_width3)
+confint(ant_biomet_width3)
+#plot(rel_load2w)
+AIC(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
+anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
+
+
+
+
+
 
 ###### 1.2.2 Ant length vs. ants weight #####
 ant_biometrics_2 <- lm(log10(ant_length) ~ log10(ant_weight) * ant_species
@@ -268,9 +295,10 @@ boxplot(prey_area ~ forest_type, data = df_dis,
 #=============================================================================#
 
 #=============================================================================#
-                     #### 3.1 Weight-Relationship  #### 
+                     ##### 3.1 Weight-Relationship  #### 
+                #Ant weight vs prey weight (single workers) 
 #=============================================================================#
-
+###### 3.1.1 Data preparation #####
 #setting species and forest as factor (aka categorical variable)
 df_single$ant_species <- factor(df_single$ant_species)
 df_single$forest_type <- factor(df_single$forest_type)
@@ -281,17 +309,16 @@ df_single <- df_single %>%
   mutate(across(c(ant_size, prey_shape),
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
-
-#Ant weight vs prey weight (single workers)#####################################
+###### 3.1.2 Choosing the fittest Model #####
 #base model without explaining variables 
 #weight relations for single carriers Nr.1
-weight_sc1 <- lm(log_prey_weight ~ log_ant_weight, data = df_single) 
+weight_sc1 <- lm(log10(prey_weight) ~ log10(ant_weight), data = df_single) 
 
 summary(weight_sc1 )
 confint(weight_sc1 ) # 95%-Convidence intervall
 
 #model with only main effects
-weight_sc2 <- lm(log_prey_weight ~ log_ant_weight + ant_species + forest_type + 
+weight_sc2 <- lm(log10(prey_weight) ~ log10(ant_weight) + ant_species + forest_type + 
           prey_shape, data = df_single)
 
 summary(weight_sc2)
@@ -303,7 +330,7 @@ bptest(weight_sc2) #Breusch-Pagan-test on homoskedasticity (is Varianz in Residu
 
 #model with interacting effect specis an main effects 
 #test this to see if slope is different when species are considered
-weight_sc3 <- lm(log_prey_weight ~ log_ant_weight * ant_species + forest_type + 
+weight_sc3 <- lm(log10(prey_weight) ~ log10(ant_weight) * ant_species + forest_type + 
            prey_shape, data = df_single)
 
 summary(weight_sc3)
@@ -311,33 +338,278 @@ confint(weight_sc3)
 AIC(weight_sc1, weight_sc2, weight_sc3)
 anova(weight_sc2, weight_sc3)
 
-#Relative load vs. Ant weight (single workers)################################
-#base model no main effects
-rel_load1 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
 
-summary(rel_load1)
-confint(rel_load1) # 95%-Convidence intervall
-#plot(rel_load1) 
+###### 3.1.3 Plotting: Ant weight vs prey weight (single workers)#####
+#This is the plot showing the weight_sc3
+#Regression line should be for both species since species has no sig. effect
+
+ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
+                      color = ant_species)) +
+  #sets points  
+  geom_point(alpha = 0.7, size = 0.7) +  
+  
+  #regression line, se sets confidence area 
+  geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.7) +
+  
+  
+  #add horizontel reference line   
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
+  
+  #set colour scheme 
+  scale_color_manual(values = c("#E69F00", "#56B4E9")) +
+  
+  #Add description and legend
+  labs(
+    x = "Ant weight (log10, mg)",
+    y = "Prey weight (log10, mg)",
+    color = "Dorylus"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+
+#TO DO: Check for used model (is it the right one?)
+
+
+
+
+
+#=============================================================================#
+                    ##### 3.2 Dimensional matching  #### 
+                     #Prey size / shape vs Ant size
+#=============================================================================#
+
+
+#=============================================================================#
+                   ##### 3.3 Loading in Single Workers  #### 
+#=============================================================================#
+###### 3.3.1 Relative load vs. Ant weight (single workers) ######
+#Relaive load is defined by ant_load / ant_weight
+
+                         # A. Linear Regression Models
+#-----------------------------------------------------------------------------#
+#base model no main effects
+rel_load1w <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
+
+summary(rel_load1w)
+confint(rel_load1w) # 95%-Convidence intervall
+#plot(rel_load1w) 
 
 #model with only main effects
-rel_load2 <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species + forest_type + 
-            prey_shape, data = df_single)
+rel_load2w <- lm(log10(relativ_loading) ~ log10(ant_weight) + ant_species +
+                   forest_type +  prey_shape, data = df_single)
 
-summary(rel_load2)
-confint(rel_load2)
-#plot(rel_load2)
+summary(rel_load2w)
+confint(rel_load2w)
+#plot(rel_load2w)
 
 #model with interacting effect specis an main effects 
-rel_load3 <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + forest_type + 
-            prey_shape, data = df_single)
+rel_load3w <- lm(log10(relativ_loading) ~ log10(ant_weight) * ant_species + 
+                   forest_type + prey_shape, data = df_single)
 
-summary(rel_load3)
-confint(rel_load3)
-AIC(rel_load1, rel_load2, rel_load3)
-anova(rel_load1, rel_load2, rel_load3)
-#plot(rel_load3)
+summary(rel_load3w)
+confint(rel_load3w)
+AIC(rel_load1w, rel_load2w, rel_load3w)
+anova(rel_load1w, rel_load2w, rel_load3w)
+#plot(rel_load3w)
+
+                          # B. Linear Mixed Models
+#-----------------------------------------------------------------------------#
+#Creating a LMM based on LRM with only main/fixed effects 
+#This includes possible random variation due to the raids (adds random effect)
+#We do this based on the rusltus of comparison between the models above
+
+#checking variation within Raids
+VarCorr(rel_load_LMMw)
+icc(rel_load_LMMw)
+#The random intercept for raid identity explained 13% of the variance (ICC=0.13)
+
+rel_load_LMMw <- lmer(log10(relativ_loading) ~ log10(ant_weight) + 
+                       ant_species + forest_type + prey_shape + (1 | raid_ID),
+                 data = df_single)
+
+summary(rel_load_LMMw)
+AIC(rel_load1w, rel_load2w, rel_load3w, rel_load_LMMw)
 
 
+                                  # C. DHARMa 
+#-----------------------------------------------------------------------------#
+
+sim_rel_load_LMMw <- simulateResiduals(rel_load_LMMw)  #Simulating Residuals
+
+# plot(sim_rel_load_LMMw ) #plot diagnostic
+
+# Testing Distribution & Dispersion
+testDispersion(sim_rel_load_LMMw )
+testUniformity(sim_rel_load_LMMw )
+testResiduals(sim_rel_load_LMMw )  
+
+
+
+                              # C. Plot for LMM 
+#-----------------------------------------------------------------------------#
+# Sequencing Ant weight to have fixed points for the predict grid
+ant_seq_rel_loadw <- seq(
+  from = min(df_single$ant_weight, na.rm = TRUE),
+  to   = max(df_single$ant_weight, na.rm = TRUE),
+  length.out = 100
+)
+
+#Prediction-Grid (for both spices, primary forest, mean prey_shape)
+#To calculate predicts and generate one line all effects net to be standardized
+newdat_rel_loadw <- expand.grid(
+  ant_weight   = ant_seq_rel_loadw,
+  ant_species  = levels(df_single$ant_species),
+  forest_type  = "primary",
+  prey_shape   = mean(df_single$prey_shape, na.rm = TRUE)
+)
+
+#LMM-Predicts (only Fixed Effects)
+
+newdat_rel_loadw$pred_log_rel_load <- predict(
+  rel_load_LMMw,
+  newdata = newdat_rel_loadw,
+  re.form = NA   # no random effects in line
+)
+
+#Generating Plot with data points + LMM-Lines
+plot_rel_weight<- ggplot(df_single, aes(x = log10(ant_weight),
+                      y = log10(relativ_loading),
+                      colour = ant_species)) +
+  geom_point(alpha = 0.3, size = 1) +
+  geom_line(data = newdat_rel_loadw,
+            aes(x = log10(ant_weight),
+                y = pred_log_rel_load,
+                colour = ant_species),
+            linewidth = 1.1) +
+  theme_classic(base_size = 13) +
+  labs(
+    x = "Ant weight (log10 mg)",
+    y = "Relative load (log10 prey mass / ant mass)",
+    colour = "Ant species",
+    title = "Relative load vs. ant weight (single carriers, LMM predictions)"
+  )
+
+# file save
+jpeg(file = "Relative Load vs. Ant Weight.jpg",
+     width = 25, height = 18, units = "cm", res = 300)
+plot_rel_weight
+dev.off()
+
+
+#_____________________________________________________________________________#
+
+###### 3.3.2 Relative load vs. Ant size (single workers) ######
+
+# Relative load is defined by ant_load / ant-weight
+
+                       # A. Linear Regression Models
+#-----------------------------------------------------------------------------#
+# base model, no main effects
+rel_load1s <- lm(log10(relativ_loading) ~ log10(ant_size), data = df_single) 
+
+summary(rel_load1s)
+confint(rel_load1s)
+
+# model with only main effects
+rel_load2s <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species +
+                   forest_type + prey_shape, data = df_single)
+
+summary(rel_load2s)
+confint(rel_load2s)
+
+# model with interaction species × ant_size
+rel_load3s <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + 
+                   forest_type + prey_shape, data = df_single)
+
+summary(rel_load3s)
+confint(rel_load3s)
+AIC(rel_load1s, rel_load2s, rel_load3s)
+anova(rel_load1s, rel_load2s, rel_load3s)
+
+
+                          # B. Linear Mixed Model
+#-----------------------------------------------------------------------------#
+# LMM based on best LRM structure, including raid-level random intercept
+
+rel_load_LMMs <- lmer(log10(relativ_loading) ~ log10(ant_size) + 
+                        ant_species + forest_type + prey_shape + (1 | raid_ID),
+                      data = df_single)
+
+summary(rel_load_LMMs)
+AIC(rel_load1s, rel_load2s, rel_load3s, rel_load_LMMs)
+
+# random-effect variance
+VarCorr(rel_load_LMMs)
+icc(rel_load_LMMs)
+
+
+                                # C. DHARMa 
+#-----------------------------------------------------------------------------#
+
+sim_rel_load_LMMs <- simulateResiduals(rel_load_LMMs)
+
+# plot(sim_rel_load_LMMs)
+
+testDispersion(sim_rel_load_LMMs)
+testUniformity(sim_rel_load_LMMs)
+testResiduals(sim_rel_load_LMMs)
+
+
+                              # D. Plot for LMM 
+#-----------------------------------------------------------------------------#
+# 1) Create ant_size sequence for prediction grid
+ant_seq_rel_loads <- seq(
+  from = min(df_single$ant_size, na.rm = TRUE),
+  to   = max(df_single$ant_size, na.rm = TRUE),
+  length.out = 100
+)
+
+# 2) Prediction grid (both species, primary forest, mean prey shape)
+newdat_rel_loads <- expand.grid(
+  ant_size     = ant_seq_rel_loads,
+  ant_species  = levels(df_single$ant_species),
+  forest_type  = "primary",
+  prey_shape   = mean(df_single$prey_shape, na.rm = TRUE)
+)
+
+# 3) Fixed-effect LMM predictions
+newdat_rel_loads$pred_log_rel_load <- predict(
+  rel_load_LMMs,
+  newdata = newdat_rel_loads,
+  re.form = NA
+)
+
+# 4) Create plot
+plot_rel_size <- ggplot(df_single, aes(x = log10(ant_size),
+                                       y = log10(relativ_loading),
+                                       colour = ant_species)) +
+  geom_point(alpha = 0.3, size = 1) +
+  geom_line(data = newdat_rel_loads,
+            aes(x = log10(ant_size),
+                y = pred_log_rel_load,
+                colour = ant_species),
+            linewidth = 1.1) +
+  theme_classic(base_size = 13) +
+  labs(
+    x = "Ant size (log10 mm²)",
+    y = "Relative load (log10 prey mass / ant mass)",
+    colour = "Ant species",
+    title = "Relative load vs. ant size (single carriers, LMM predictions)"
+  )
+
+# Save file
+jpeg(file = "Relative Load vs. Ant Size.jpg",
+     width = 25, height = 18, units = "cm", res = 300)
+plot_rel_size
+dev.off()
+
+###############################################################################
 #Load per ant vs ant weight + single vs multiple carriers######################
 #setting species and forest as factor (aka categorical variable)
 df_multi$ant_species <- factor(df_multi$ant_species)
