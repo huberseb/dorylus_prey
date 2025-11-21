@@ -133,7 +133,7 @@ boxplot((1000*ant_weight)~ ant_species, data = df,
 
 
 #==============================================================================#
-            ##### 1.2 Allometry between Ants ##### 
+                 ##### 1.2 Allometry between Ants ##### 
 #==============================================================================#
 ###### 1.2.1 Ant length vs. ants width #####
 
@@ -165,6 +165,31 @@ anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 
                       # B. Plot for LRM (ant_biomet_width3)
 #-----------------------------------------------------------------------------#
+ant_length_width <- ggplot(df, aes(x = ant_length, y = ant_width,
+                                       color = ant_species)) +
+  geom_point(alpha = 0.3, size = 1.5) +     # slightly transparent points
+  geom_smooth(aes(color = NULL),    # remove species grouping for the line
+              method = "lm", 
+              se = TRUE, 
+              linewidth = 1,
+              color = "grey9") + 
+  scale_x_log10() +     
+  scale_y_log10() + 
+  scale_colour_manual(values = c("D. wilverthi" = "#56B4E9",
+                                 "D. sjostedti" = "#E69F00")) +
+  theme_clean(base_size = 14) +
+  theme(legend.position = "bottom", plot.title = element_text(size = 14)) +
+  labs(
+    x = "Ant body length (mm)",
+    y = "Ant body width (mm)",
+    color = "Species",
+    title = "Relationship between body length and width in Dorylus ants"
+  )
+
+jpeg(filename = "Relationships length width ants.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+ant_length_width
+dev.off()
 
 
                             # C. Linear Mixed Models
@@ -190,52 +215,66 @@ AIC(ant_biomet_width1, ant_biomet_width2,
 
 
                                 # D. Plot LMM
+#NEEDS MASSIV BUG FIX
+#predict seems to not hav ant_weight and it seems not to be in the data frame.
+#Maybe this issue comes from the lmm model and the previous changes in Intercepter 
+#and predicter bc I wanted to have length on the X-achse 
 #-----------------------------------------------------------------------------#
 
-# Prediction grid
-newdat <- expand.grid(
-  ant_length    = seq(min(df$ant_length), max(df$ant_length), length = 200),
-  ant_species  = levels(df$ant_species),
-  forest_type  = "primary",      # choose whichever you want as reference
-  raid_ID      = NA              # population-level prediction (random effect = 0)
+newdat_biom_width<- expand.grid(
+  ant_length  = seq(min(df$ant_length, na.rm = TRUE),
+                    max(df$ant_length, na.rm = TRUE),
+                    length.out = 200),
+  ant_species = levels(df$ant_species),
+  forest_type = "primary",   # reference 
+  raid_ID     = NA           # population-level prediction
 )
 
-newdat$log_pred <- predict(ant_biomet_width_lmm,
-                           newdata = newdat,
-                           re.form = NA)
+# Dummy-Response-colum added
+#enables reading of log10(ant_width) but is not used
+#newdat_biom_width$ant_width <- 1
 
-# LMM plot (log-scale axes)
-ggplot(df, aes(x = ant_length, y = log10(ant_width), color = ant_species)) +
-  geom_point(alpha = 0.35, size = 1) +
+# Vorhersage auf log10-Skala (Modellskala)
+newdat_biom_width$log_pred_width <- predict( ant_biomet_width_lmm,
+  newdata = newdat_biom_width,
+  re.form = NA               # Random Effects = 0 (Population Level)
+)
+
+
+#Für ggplot: x und y vorbereiten
+newdat_biom_width$log10_length <- log10(newdat_biom_width$ant_length)
+newdat_biom_width$log10_width  <- newdat_biom_width$log_pred_width
+
+
+#Plot
+ggplot(df, aes(x = log10(ant_length), y = log10(ant_width),
+               color = ant_species)) +
   
-  # model predicted regression lines
-  geom_line(data = newdat,
-            aes(x = ant_length, y = log_pred, color = ant_species),
-            linewidth = 1.2) +
+  # Rohdatenpunkte
+  geom_point(alpha = 0.3, size = 1.3) +
   
-  # log10 axes
-  scale_x_log10() +
-  scale_y_log10() +
-  
+  # LMM-Vorhersagekurven
+  geom_line( data = newdat_biom_width,aes( x = log10_length, 
+                                           y = log10_width,
+              color = ant_species),linewidth = 1.4) +
+
   scale_colour_manual(values = c(
     "D. wilverthi" = "#56B4E9",
-    "D. sjostedti" = "#E69F00"
-  )) +
+    "D. sjostedti" = "#E69F00" )) +
   
+  # Theme & Labels
   theme_clean(base_size = 14) +
   theme(
     legend.position = "bottom",
-    plot.title = element_text(size = 12)
+    plot.title = element_text(size = 14)
   ) +
   
   labs(
     x = "Ant body length (log10 mm)",
     y = "Ant body width (log10 mm)",
     color = "Species",
-    title = "LMM-predicted allometric relationship (log10 scale)"
+    title = "LMM-predicted allometric relationship\n(log10 width ~ log10 length × species)"
   )
-
-
 
 
 ###### 1.2.2 Ant length vs. ants weight #####
@@ -249,7 +288,7 @@ confint(ant_biometrics_2)
 
 
 
-#=============================================================================
+#=============================================================================#
                       #### 2. Prey Biometrics Analysis #### 
 #=============================================================================#
 ##### Preparation of raw data and setting df #####
@@ -279,7 +318,7 @@ df_dis["prey_shape"] <- df_dis$prey_length / df_dis$prey_width
 df_dis["prey_area"] <- df_dis$prey_length * df_dis$prey_width
 
 #==============================================================================
-##### 2.1 Size differences in Prey Items ##### 
+                  ##### 2.1 Size differences in Prey Items ##### 
 #==============================================================================#
 
 ###### 2.1.1 Testing against Ants #####
@@ -359,12 +398,12 @@ boxplot(prey_area ~ forest_type, data = df_dis,
 
 
 #=============================================================================
-                      #### 3 Ant-Prey-Relationship  #### 
-#=============================================================================#
 
-#=============================================================================#
-                     ##### 3.1 Weight-Relationship  #### 
-                #Ant weight vs prey weight (single workers) 
+
+                      #### 3 Ant-Prey-Relationship  #### 
+
+                     ##### 3.1 Weight-Relationship  ##### 
+                  #Ant weight vs prey weight (single workers) 
 #=============================================================================#
 ###### 3.1.1 Data preparation #####
 #setting species and forest as factor (aka categorical variable)
@@ -447,13 +486,13 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
 
 
 
-#=============================================================================#
-                    ##### 3.2 Dimensional matching  #### 
-                     #Prey size / shape vs Ant size
+#=============================================================================
+                     ##### 3.2 Dimensional matching  #### 
+                        #Prey size / shape vs Ant size
 #=============================================================================#
 
 
-#=============================================================================#
+#=============================================================================
                    ##### 3.3 Loading in Single Workers  #### 
 #=============================================================================#
 ###### 3.3.1 Relative load vs. Ant weight (single workers) ######
@@ -677,8 +716,12 @@ jpeg(file = "Relative Load vs. Ant Size.jpg",
 plot_rel_size
 dev.off()
 
-###############################################################################
-#Load per ant vs ant weight + single vs multiple carriers######################
+#=============================================================================
+                
+                    ##### 3.4 Loading in ALL Workers  #### 
+         #Load per ant vs ant weight + single vs multiple carriers
+
+#=============================================================================#
 #setting species and forest as factor (aka categorical variable)
 df_multi$ant_species <- factor(df_multi$ant_species)
 df_multi$forest_type <- factor(df_multi$forest_type)
