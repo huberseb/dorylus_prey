@@ -1,14 +1,15 @@
-library(ggplot2)
-library(ggthemes)
-library(patchwork)
-library(effectsize)
-library(tidyverse)
-library(dplyr)
-library(lmtest)
-library(performance) #e.g. for ICC calculations
-library(lme4) #for LMM´s
-library(DHARMa)
-
+library(ggplot2)                                  #        ,_     _,
+library(ggthemes)                                 #          '._.'
+library(patchwork)                                #     '-,   (_)   ,-'     D
+library(effectsize)                               #       '._ .:. _.'       O
+library(tidyverse)                                #        _ '|Y|' _        R 
+library(dplyr)                                    #      ,` `>\ /<` `,      Y
+library(lmtest)                                   #     ` ,-`  I  `-, `     L
+library(performance) #e.g. for ICC calculations   #       |   /=\   |       U
+library(lme4) #for LMM´s                          #     ,-'   |=|   '-,     S
+library(DHARMa)                                   #          ( = )        
+                                                  #           \_/       
+                                                  # # # # # # # # # # # # # # #             
 #reading in data
 df <- read.delim(
   file   = "all_ants_all_prey.csv",
@@ -733,5 +734,19 @@ df_multi <- df_multi %>%
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
 
-
+#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢿⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢀⣾⣿⣿⣷⡀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠘⣿⣿⣿⣿⠃⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣏⣉⠙⠛⠿⣿⣿⣿⣦⡾⠋⠙⢷⣴⣿⣿⣿⠿⠛⠋⣉⣹⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⢻⣿⣟⠀⠀⠀⠀⣻⣿⡟⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠙⢿⣷⢤⡤⣾⡿⠋⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣿⠉⠙⠛⠷⢼⡇⠀⠀⢸⡧⠾⠛⠋⠉⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⠇⢰⣿⣿⣶⡼⣷⠀⠀⣾⢧⣶⣾⣿⡆⠸⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⡏⢠⣿⣿⠿⠋⣠⣿⡶⢶⣿⣄⠙⠿⣿⣿⡄⢹⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⡟⢠⣾⣿⠁⣴⣾⠋⠁⠀⠀⠈⠙⣷⣦⠈⣿⣷⡄⢻⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⠏⣠⣿⣿⣿⠀⣿⣧⠀⠀⠀⠀⠀⠀⣼⣿⠀⣿⣿⣿⣄⠹⣿⣿⣿⣿
+#⣿⣿⣿⣷⣼⣿⣿⣿⡟⢀⣿⣿⡄⠀⠀⠀⠀⢠⣿⣿⡀⢻⣿⣿⣿⣧⣾⣿⣿⣿
+#⣿⣿⣿⣿⣿⣿⣿⣿⠇⣸⣿⣿⣿⣄⠀⠀⣠⣿⣿⣿⣇⠸⣿⣿⣿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⡿⠛⣁⣴⣿⣿⣿⣿⣿⣦⣴⣿⣿⣿⣿⣿⣦⣈⠛⢿⣿⣿⣿⣿⣿
+#⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿
 

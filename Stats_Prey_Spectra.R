@@ -1,8 +1,6 @@
 #=============================================================================#
 #         Statistical Analysis for the Dorylus prey Spectra Relations         #
 #=============================================================================#
-
-
 #### Packages and Version Controll####
 ## Code runs ons R.4.3.3 
 ## Some used packages are no longer supported since R.4.4.0 
@@ -46,19 +44,21 @@ install.packages("ggbeeswarm")
 install.packages("ggdist")
 
 #### Library ####
-library(gmp)
-library(bipartite)
-library(ggforce)
-library(tidyquant)
-library(EcoSimR)
-library(vegan)
-library(mvabund)
-library(ggplot2)
-library(cooccur)
-library(tidyverse)
-require(graphics)
-library(devtools)
-library(ggord)
+library(gmp)                                #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢿⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+library(bipartite)                          #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢀⣾⣿⣿⣷⡀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+library(ggforce)                            #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠘⣿⣿⣿⣿⠃⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+library(tidyquant)                          #⣿⣿⣿⣿⣏⣉⠙⠛⠿⣿⣿⣿⣦⡾⠋⠙⢷⣴⣿⣿⣿⠿⠛⠋⣉⣹⣿⣿⣿⣿
+library(EcoSimR)                            #⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⢻⣿⣟⠀⠀⠀⠀⣻⣿⡟⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿
+library(vegan)                              #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠙⢿⣷⢤⡤⣾⡿⠋⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
+library(ggeffects)                          #⣿⣿⣿⣿⣿⣿⣿⣿⠉⠙⠛⠷⢼⡇⠀⠀⢸⡧⠾⠛⠋⠉⣿⣿⣿⣿⣿⣿⣿⣿
+library(mvabund)                            #⣿⣿⣿⣿⣿⣿⣿⠇⢰⣿⣿⣶⡼⣷⠀⠀⣾⢧⣶⣾⣿⡆⠸⣿⣿⣿⣿⣿⣿⣿
+library(ggplot2)                            #⣿⣿⣿⣿⣿⣿⡏⢠⣿⣿⠿⠋⣠⣿⡶⢶⣿⣄⠙⠿⣿⣿⡄⢹⣿⣿⣿⣿⣿⣿
+library(effectsize)                         #⣿⣿⣿⣿⣿⡟⢠⣾⣿⠁⣴⣾⠋⠁⠀⠀⠈⠙⣷⣦⠈⣿⣷⡄⢻⣿⣿⣿⣿⣿
+library(cooccur)                            #⣿⣿⣿⣿⠏⣠⣿⣿⣿⠀⣿⣧⠀⠀⠀⠀⠀⠀⣼⣿⠀⣿⣿⣿⣄⠹⣿⣿⣿⣿
+library(tidyverse)                          #⣿⣿⣿⣷⣼⣿⣿⣿⡟⢀⣿⣿⡄⠀⠀⠀⠀⢠⣿⣿⡀⢻⣿⣿⣿⣧⣾⣿⣿⣿
+require(graphics)                           #⣿⣿⣿⣿⣿⣿⣿⣿⠇⣸⣿⣿⣿⣄⠀⠀⣠⣿⣿⣿⣇⠸⣿⣿⣿⣿⣿⣿⣿⣿
+library(devtools)                           #⣿⣿⣿⣿⣿⡿⠛⣁⣴⣿⣿⣿⣿⣿⣦⣴⣿⣿⣿⣿⣿⣦⣈⠛⢿⣿⣿⣿⣿⣿
+library(ggord)                              #⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿
 library(ggthemes)
 library(RColorBrewer)
 library(viridis)
@@ -79,8 +79,8 @@ library(lmtest)
 library(performance)
 library(DHARMa)
 library(lme4) #GLMM
-library(effectsize)
-library(ggeffects)
+
+
 
 
 #-----------------------------------------------------------------------------#
