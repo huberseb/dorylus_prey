@@ -1,4 +1,6 @@
 library(ggplot2)
+library(ggthemes)
+library(patchwork)
 library(effectsize)
 library(tidyverse)
 library(dplyr)
@@ -13,6 +15,8 @@ df <- read.delim(
   sep  = ",",
   dec = "." # <-- very important for comma decimals
 )
+df$ant_species <- factor(df$ant_species)
+df$forest_type <- factor(df$forest_type)
 
 #==============================================================================#
                       ####  Preparation fo Data ####
@@ -53,13 +57,6 @@ write.csv(df_log, "all_ants_log.csv")
 #=============================================================================#
 #####  Calculating important values and indexes #####
 #==============================================================================#
-#reading in data
-df <- read.delim(
-  file   = "all_ants_log.csv",
-  sep  = ",",
-  dec = "." # <-- very important for comma decimals
-) 
-
 
 ############## Prey Shape (prey length/prey width) 
 # index of how long and thin or short and fat prey items are
@@ -143,20 +140,20 @@ boxplot((1000*ant_weight)~ ant_species, data = df,
                       # A. Linear Regression Models
 #-----------------------------------------------------------------------------#
 #base model no main effects
-ant_biomet_width1 <- lm(log10(ant_length) ~ log10(ant_width), data = df)
+ant_biomet_width1 <- lm(log10(ant_width) ~ log10(ant_length), data = df)
 
 summary(ant_biomet_width1)
 confint(ant_biomet_width1)
 
 #model with only main effects
-ant_biomet_width2 <- lm(log10(ant_length) ~ log10(ant_width) + ant_species
+ant_biomet_width2 <- lm(log10(ant_width) ~ log10(ant_length) + ant_species
                        + forest_type , data = df)
 
 summary(ant_biomet_width2)
 confint(ant_biomet_width2)
 
 #model with interacting effect specis an main effects 
-ant_biomet_width3 <- lm(log10(ant_length) ~ log10(ant_width) * ant_species
+ant_biomet_width3 <- lm(log10(ant_width) ~ log10(ant_length) * ant_species
                      + forest_type , data = df)
 
 summary(ant_biomet_width3)
@@ -166,6 +163,77 @@ AIC(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 
 
+                      # B. Plot for LRM (ant_biomet_width3)
+#-----------------------------------------------------------------------------#
+
+
+                            # C. Linear Mixed Models
+#-----------------------------------------------------------------------------#
+#Creating a LMM based on LRM with only main/fixed effects 
+#This includes possible random variation due to the raids (adds random effect)
+#We do this based on the rusltus of comparison between the models above
+
+
+ant_biomet_width_lmm <- lmer(log10(ant_width) ~ log10(ant_length) * 
+                        ant_species + forest_type  + (1 | raid_ID),
+                      data = df)
+
+#checking variation within Raids
+VarCorr(ant_biomet_width_lmm)
+icc(ant_biomet_width_lmm)
+# 17.5% of variance occurs at the raid level → raids are NOT independent
+
+summary(ant_biomet_width_lmm)
+AIC(ant_biomet_width1, ant_biomet_width2, 
+    ant_biomet_width3,ant_biomet_width_lmm)
+
+
+
+                                # D. Plot LMM
+#-----------------------------------------------------------------------------#
+
+# Prediction grid
+newdat <- expand.grid(
+  ant_length    = seq(min(df$ant_length), max(df$ant_length), length = 200),
+  ant_species  = levels(df$ant_species),
+  forest_type  = "primary",      # choose whichever you want as reference
+  raid_ID      = NA              # population-level prediction (random effect = 0)
+)
+
+newdat$log_pred <- predict(ant_biomet_width_lmm,
+                           newdata = newdat,
+                           re.form = NA)
+
+# LMM plot (log-scale axes)
+ggplot(df, aes(x = ant_length, y = log10(ant_width), color = ant_species)) +
+  geom_point(alpha = 0.35, size = 1) +
+  
+  # model predicted regression lines
+  geom_line(data = newdat,
+            aes(x = ant_length, y = log_pred, color = ant_species),
+            linewidth = 1.2) +
+  
+  # log10 axes
+  scale_x_log10() +
+  scale_y_log10() +
+  
+  scale_colour_manual(values = c(
+    "D. wilverthi" = "#56B4E9",
+    "D. sjostedti" = "#E69F00"
+  )) +
+  
+  theme_clean(base_size = 14) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(size = 12)
+  ) +
+  
+  labs(
+    x = "Ant body length (log10 mm)",
+    y = "Ant body width (log10 mm)",
+    color = "Species",
+    title = "LMM-predicted allometric relationship (log10 scale)"
+  )
 
 
 
@@ -424,9 +492,7 @@ anova(rel_load1w, rel_load2w, rel_load3w)
 #This includes possible random variation due to the raids (adds random effect)
 #We do this based on the rusltus of comparison between the models above
 
-#checking variation within Raids
-VarCorr(rel_load_LMMw)
-icc(rel_load_LMMw)
+
 #The random intercept for raid identity explained 13% of the variance (ICC=0.13)
 
 rel_load_LMMw <- lmer(log10(relativ_loading) ~ log10(ant_weight) + 
@@ -436,7 +502,9 @@ rel_load_LMMw <- lmer(log10(relativ_loading) ~ log10(ant_weight) +
 summary(rel_load_LMMw)
 AIC(rel_load1w, rel_load2w, rel_load3w, rel_load_LMMw)
 
-
+#checking variation within Raids
+VarCorr(rel_load_LMMw)
+icc(rel_load_LMMw)
                                   # C. DHARMa 
 #-----------------------------------------------------------------------------#
 
