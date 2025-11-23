@@ -223,7 +223,7 @@ ant_legend_theme <- theme(
   legend.key.spacing   = unit(0.5, "lines"),
   legend.key.spacing.x = unit(1.2, "lines"),
   legend.text          = element_text(size = 18, face = "italic"),
-  legend.title         = element_text(size = 18, face = "bold"), 
+  legend.title         = NULL, 
   legend.text.align  = 0.5,
   legend.title.align = 0.5
 )
@@ -276,7 +276,7 @@ plot_ant_biometrics <- (plot_ant_length + plot_ant_width + plot_ant_weight) +
   )
 
 # file save
-jpeg(file = "Biometrics Ants adopded scale.jpg",
+jpeg(file = "Histogramm Biometrics Ants.jpg",
      width = 60, height = 18, units = "cm", res = 300)
 plot_ant_biometrics
 dev.off()
@@ -303,14 +303,30 @@ boxp_style <- list(
   colour        = "grey11",
   alpha         = 0.55, 
   outliers      = FALSE, 
-  outlier.shape = 21,
+  outlier.shape = NA,
   outlier.colour = "grey11",
   outlier.fill   = NA,
   outlier.size  = 1,
   outlier.stroke = 0.3,
   outlier.alpha = 0.3, 
-  staplewidth   = 0.5, 
+  staplewidth   = 0.5),
+#    theme(panel.grid = element_blank(),
+ #         axis.ticks.x = element_blank(),  
+  #        axis.ticks.length = unit(0, "pt")),
+  dorylus_colour,
+  guides(colour = "none"),
+  theme_clean(base_size = 18) %+replace% theme(
+    panel.grid.major   = element_blank(),
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.background = element_blank(),
+    panel.border     = element_blank(),
+    plot.title = element_text(hjust = 1)          # remove tick length
   ))
+
 
 #Point cloud with outliners 
 boxp_distribution <- list( 
@@ -334,7 +350,7 @@ boxp_violin <- list(
     position    = position_nudge(0.08, 0) 
   ))
 
-#losing all x axis 
+#losing all x axis and grids
 without_x_achse <-   theme(
   axis.title.x = element_blank(),
   axis.text.x  = element_blank(),
@@ -368,7 +384,6 @@ boxplot_ant_length <- ggplot(df, aes(x = ant_species, y = (ant_length),
   boxp_distribution +
   boxp_style +
   #boxp_violin +
-  plot_style+ 
   labs( y = "Ant body length [mm]",
         x ="",
         fill = NULL)+
@@ -385,7 +400,6 @@ boxplot_ant_width <- ggplot(df, aes(x = ant_species, y = (ant_width),
   boxp_distribution +
   boxp_style +
   #boxp_violin +
-  plot_style+ 
   labs( y = "Ant body width [mm]",
         x ="",
         fill = NULL)+
@@ -401,7 +415,6 @@ boxplot_ant_weight <- ggplot(df, aes(x = ant_species, y = (1000*ant_weight),
   boxp_distribution +
   boxp_style +
   #boxp_violin +
-  plot_style+ 
   labs( y = "Ant weight [mg]",
         x ="",
         fill = NULL)+
@@ -427,13 +440,10 @@ boxp_panel <- theme(
 
 #Preperation of individual plots
 boxplot_ant_length_a  <- boxplot_ant_length + boxp_panel +
-  theme(legend.position = "none") +
-  
+  theme(legend.position = "none") 
 boxplot_ant_width_a   <- boxplot_ant_width + boxp_panel +
-  theme(legend.position = "none") + 
-  scale_x_continuous(limits = lims_width, breaks = pretty(lims_width, n = 4))
-boxplot_ant_weight_a  <- boxplot_ant_weight + boxp_legend_theme + boxp_panel +
-  
+  theme(legend.position = "none") 
+boxplot_ant_weight_a  <- boxplot_ant_weight + boxp_legend_theme + boxp_panel
 
 #Combining everything
 boxplot_ant_biometrics <- (boxplot_ant_length_a + boxplot_ant_width_a + 
@@ -443,37 +453,66 @@ boxplot_ant_biometrics <- (boxplot_ant_length_a + boxplot_ant_width_a +
          )      
 
 # file save
-jpeg(file = "Boxplot Biometrics Ants.jpg",
+jpeg(file = "Boxplot Biometrics Ants_v2.jpg",
      width = 60, height = 18, units = "cm", res = 300)
 boxplot_ant_biometrics
 dev.off()
 
-lims_length <- c( 0, 14)
-lims_weight <- c( 0, 44)
-lims_width <- c(0,4.3)
+                  ######### E. Combining all Plots #######
 
-#Cleaning legends and Axis befor combination
+
+
+#Preparing Boxplots
 boxplot_ant_length_c  <- boxplot_ant_length_a  +  labs (y = "") +
-  scale_y_continuous(position = "right")
+  scale_y_continuous(position = "right", limits = xlims, breaks = xbreaks)
 boxplot_ant_width_c   <- boxplot_ant_width_a   + labs (y = "") +
-  scale_y_continuous(position = "right")
+  scale_y_continuous(position = "right", limits = lims_width,
+                     breaks = pretty(lims_width, n = 4))
 boxplot_ant_weight_c  <- boxplot_ant_weight_a + theme(legend.position = "none") +
-  scale_y_continuous(position = "right", limits = c()) + labs (y = "")
-
+  scale_y_continuous(position = "right",limits = lims_weight, 
+                     breaks = pretty(lims_weight, n = 5)) + labs (y = "")
 
 #Combining everything
 boxplot_ant_biometrics_c <- (boxplot_ant_length_c + boxplot_ant_width_c + 
                              boxplot_ant_weight_c) +
-  theme( plot.margin      = margin(5, 20, 5, 20),
-         panel.spacing    = unit(0.8, "lines"))      # Abstand zwischen Panels
+  theme( plot.margin      = margin(-10, 20, 5, 20),
+         panel.spacing    = unit(1.2, "lines"),
+         panel.spacing.y =  unit(0.1, "lines"))      # Abstand zwischen Panels
 
 
-All_biomet_plot <- (plot_ant_biometrics / boxplot_ant_biometrics_c) +
-  theme( plot.margin      = margin(5, 20, 5, 20),
-         panel.spacing    = unit(0.8, "lines"))
 
 
-jpeg(file = "All Biometrics Ants.jpg",
+plot_ant_weight_c <- plot_ant_weight + 
+  theme(
+  legend.position      = c(0.95, 0.80),           # inwards, top right
+  legend.justification = c("right", "center"),
+  axis.title.x = element_text(margin = margin (t=15))
+)
+plot_ant_length_c <- plot_ant_length + theme( 
+  axis.title.x = element_text(margin = margin (t=15)))
+plot_ant_width_c <- plot_ant_width + theme( 
+  axis.title.x = element_text(margin = margin (t=15)))
+
+plot_ant_biometrics_c <- (plot_ant_length_c + plot_ant_width_c +
+                            plot_ant_weight_c) +
+  theme(
+    plot.margin      = margin(5, 20, -5, 20),
+    panel.spacing    = unit(0.2, "lines")  )
+  
+
+#Histograms
+top_row <- (plot_ant_length_c + plot_ant_width_c + plot_ant_weight_c) +
+  plot_layout(ncol = 3) &
+  theme(plot.margin = margin(t = 5, r = 20, b = 0, l = 20))
+
+# Boxplots 
+bottom_row <- (boxplot_ant_length_c + plot_spacer() + boxplot_ant_width_c +
+                 plot_spacer() + boxplot_ant_weight_c) +
+  plot_layout(ncol = 5, widths = c(1.4, 0.0, 1.4, 0, 1.4)) &
+  theme(plot.margin = margin(t = -15, r = 20, b = 5, l = 20))  
+
+All_biomet_plot <- top_row / bottom_row
+jpeg(file = "All Biometrics Ants_final.jpg",
      width = 60, height = 32, units = "cm", res = 300)
 All_biomet_plot
 dev.off()
