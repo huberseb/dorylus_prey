@@ -6,10 +6,14 @@ library(tidyverse)                                #        _ '|Y|' _        R
 library(dplyr)                                    #      ,` `>\ /<` `,      Y
 library(lmtest)                                   #     ` ,-`  I  `-, `     L
 library(performance) #e.g. for ICC calculations   #       |   /=\   |       U
-library(lme4) #for LMM´s                          #     ,-'   |=|   '-,     S
+library(lme4)         #for LMM´s                  #     ,-'   |=|   '-,     S
 library(DHARMa)                                   #          ( = )        
-                                                  #           \_/       
-                                                  # # # # # # # # # # # # # # #             
+library(ggpattern)                                #           \_/       
+library(patchwork)   #ombining plots              # # # # # # # # # # # # # # #  
+library(cowplot) 
+library(gghalves)    #violin plots in boxplots
+library(ggforce)
+
 #reading in data
 df <- read.delim(
   file   = "all_ants_all_prey.csv",
@@ -96,11 +100,11 @@ df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weig
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
 #==============================================================================
-                      #### 1. Ant Biometrics Analysis ####
+          #### 1. Ant Biometrics Analysis ####
 #==============================================================================#
 
 #==============================================================================#
-            ##### 1.1 Size differences between Ant species ##### 
+          ##### 1.1 Size differences between Ant species ##### 
 #==============================================================================#
 
 
@@ -115,6 +119,10 @@ cohens_d(log10(ant_weight*1000) ~ ant_species, data = df)
 cohens_d(log10(ant_width) ~ ant_species, data = df)
 
 
+
+          ######### A. Histograms #######
+#-----------------------------------------------------------------------------#
+#overview
 par(mfrow = c(1, 3))
 hist(df$ant_length, main = "Ant length", col = "grey",
      xlab = "length [mm]", ylim = c(0, 1000))
@@ -124,7 +132,162 @@ hist(df$ant_width,  main = "Ant width [mm]",
 hist((1000*df$ant_weight), main = "Ant weight", col = "grey",
      xlab = "Weight [mg]", ylim = c(0, 2500))
 
-#Box plot by species
+#Detailed Histograms for each metric showing Proportions
+
+#gettin the n for ant species
+N_wil <- sum(df$ant_species == "D. wilverthi", na.rm = TRUE)
+N_sjo <- sum(df$ant_species == "D. sjostedti", na.rm = TRUE)
+
+#In geom_histo we then give every sample a weight: 1/N_species
+#..count.. summs up all weights in bin -> gives proportion per species 
+
+#Defining colour
+dorylus_colour <- list (
+  scale_fill_manual(values = c("D. wilverthi" = "#56B4E9",
+                               "D. sjostedti" = "#E69F00"
+  )),
+  scale_colour_manual(values = c( "D. wilverthi" = "#56B4E9",
+                                  "D. sjostedti" = "#E69F00"
+  )))
+
+#Defining plot style
+plot_style <- list(
+   dorylus_colour,
+  guides(colour = "none"),
+  theme_clean(base_size = 18),
+  theme(plot.title = element_text(hjust = 1)
+  ))
+
+
+                             #-----LENGTH-----#
+plot_ant_length <- ggplot(df, aes(x = ant_length,
+                             colour = ant_species, fill =  ant_species)) +
+  geom_histogram( 
+    aes( weight = ifelse(ant_species == "D. wilverthi", 1 / N_wil, 1 / N_sjo),
+      y = after_stat(..count..) ),  
+    position = "identity",
+    alpha    = 0.5,
+    bins     = 30) +
+  plot_style + 
+  labs(
+    x = "Ant body length [mm]",
+    y = "Proportion per species",
+    fill = "Dorylus species",
+  )
+plot_ant_length
+
+                             #-----WIDTH-----#
+plot_ant_width <- ggplot(df, aes(x = ant_width,
+                             colour = ant_species, fill =  ant_species)) +
+  geom_histogram( 
+    aes( weight = ifelse(ant_species == "D. wilverthi", 1 / N_wil, 1 / N_sjo),
+         y = after_stat(..count..) ),  
+    position = "identity",
+    alpha    = 0.5,
+    bins     = 30) +
+  plot_style +  
+  labs(
+    x = "Ant body width [mm]",
+    y = "Proportion per species",
+    fill = "Dorylus species",
+  )
+plot_ant_width
+
+                            #-----WEIGHT-----#
+plot_ant_weight <- ggplot(df, aes(x = (1000*ant_weight),
+                                 colour = ant_species, fill =  ant_species)) +
+  geom_histogram( 
+    aes( weight = ifelse(ant_species == "D. wilverthi", 1 / N_wil, 1 / N_sjo),
+         y = after_stat(..count..) ),  
+    position = "identity",
+    alpha    = 0.5,
+    bins     = 30) +
+  plot_style +  
+  labs(
+    x = "Ant weight [mg]",
+    y = "Proportion per species",
+    fill = "Dorylus species",
+  )
+plot_ant_weight
+
+          ######### B. Combining all Histogramms#######
+
+#defining universal legend theme 
+ant_legend_theme <- theme(
+  legend.position      = c(0.98, 0.99),           # inwards, top right
+  legend.justification = c("right", "top"),       # anker point
+  legend.background    = element_rect(fill = "white", colour = NA),
+  legend.box.margin    = margin(0, 0, 0, 0),
+  legend.margin        = margin(0, 0, 0, 0),
+  legend.key.size      = unit(0.7, "lines"),      # compact legend
+  legend.key.spacing   = unit(0.5, "lines"),
+  legend.key.spacing.x = unit(1.2, "lines"),
+  legend.text          = element_text(size = 18, face = "italic"),
+  legend.title         = element_text(size = 18, face = "bold"), 
+  legend.text.align  = 0.5,
+  legend.title.align = 0.5
+)
+
+#defining clean panel theme 
+clean_panel_theme <- theme(
+  axis.title.x = element_text(size = 18, margin = margin(t = 10)),
+  axis.title.y = element_text(size = 18, margin = margin(r = 14)),
+  axis.text.x  = element_text(size = 14),
+  axis.text.y  = element_text(size = 14),
+  panel.border      = element_blank(),     # kein Rahmen um das Panel
+  panel.grid.major  = element_blank(),     # keine gestrichelten Linien
+  panel.grid.minor  = element_blank(),
+  panel.background  = element_blank(),     # keine graue Fläche
+  plot.background   = element_blank(),
+)
+
+#defining scale range 
+#lims_length <- range(df$ant_length, na.rm = TRUE)
+#Ant lengthe was a bit more tricky needed workaround
+pb <- ggplot_build(plot_ant_length)
+xlims   <- pb$layout$panel_params[[1]]$x.range
+xbreaks <- pb$layout$panel_params[[1]]$x$breaks
+
+scale_length <- scale_x_continuous( limits = xlims, breaks = xbreaks)
+lims_weight <- c( -1, 44)
+lims_width <- c(0.5,4.3)
+
+#Adding all themes to plots
+#adding y title, overall panel theme and legend 
+plot_ant_length  <- plot_ant_length  + 
+  labs(y = "Proportion per species") +
+  clean_panel_theme + theme(legend.position = "none") + scale_length
+
+plot_ant_width   <- plot_ant_width   + 
+  labs(y = NULL) + clean_panel_theme +
+  theme(legend.position = "none") +
+  scale_x_continuous(limits = lims_width, breaks = pretty(lims_width, n = 4))
+
+plot_ant_weight  <- plot_ant_weight  + labs(y = NULL) + clean_panel_theme +
+  ant_legend_theme + 
+  scale_x_continuous(limits = lims_weight, breaks = pretty(lims_weight, n = 5))
+
+
+#Combining everything
+plot_ant_biometrics <- (plot_ant_length + plot_ant_width + plot_ant_weight) +
+  theme(
+    plot.margin      = margin(5, 20, 5, 20),
+    panel.spacing    = unit(0.8, "lines")  # Abstand zwischen Panels
+  )
+
+# file save
+jpeg(file = "Biometrics Ants adopded scale.jpg",
+     width = 60, height = 18, units = "cm", res = 300)
+plot_ant_biometrics
+dev.off()
+
+
+
+
+
+          ######### C. Boxplots #######
+#Overview
+par(mfrow = c(1, 3))
 boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species",
         ylab = "Ant length [mm]", xlab = "")
 boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species",
@@ -132,11 +295,201 @@ boxplot(ant_width ~ ant_species, data = df, main = "Ant width by species",
 boxplot((1000*ant_weight)~ ant_species, data = df,
         main = "Ant weight by species", ylab = "Ant weight [mg]", xlab = "")
 
+#Universal Boxplot esthetics
+boxp_style <- list(
+  geom_boxplot( 
+  width         = 0.5,     # width of boxes 
+  size          = 0.6,# size of lines
+  colour        = "grey11",
+  alpha         = 0.55, 
+  outliers      = FALSE, 
+  outlier.shape = 21,
+  outlier.colour = "grey11",
+  outlier.fill   = NA,
+  outlier.size  = 1,
+  outlier.stroke = 0.3,
+  outlier.alpha = 0.3, 
+  staplewidth   = 0.5, 
+  ))
+
+#Point cloud with outliners 
+boxp_distribution <- list( 
+  geom_sina(
+    size = 1,
+    alpha = 0.3,
+    color = "grey82",
+    method = "density",
+    position = position_nudge(x = 0)
+  ))
+
+#Creaiton violin overlay   NOTE: for now disabled in idv. plots
+boxp_violin <- list(
+  geom_half_violin(
+    side        = "r",      # right side
+    width       = 0.7,      # width from center
+    trim        = FALSE,    # show whole distribution
+    alpha       = 0.4,     
+    colour      = NA,       # no rim 
+    #fill        = an_species,
+    position    = position_nudge(0.08, 0) 
+  ))
+
+#losing all x axis 
+without_x_achse <-   theme(
+  axis.title.x = element_blank(),
+  axis.text.x  = element_blank(),
+  axis.ticks.x = element_blank() )
+
+#losing all y axis
+without_y_achse <-  theme(
+  axis.title.y = element_blank(),
+  axis.text.y  = element_blank(),
+  axis.ticks.y = element_blank() )
+
+#Legend for Boxplots
+boxp_legend_theme <- theme(
+  legend.position      = c(0.98, 0.5),           # inwards, top right
+  legend.justification = c("right", "center"),       # anker point
+  legend.background    = element_rect(fill = "white", colour = NA),
+  legend.box.margin    = margin(0, 0, 0, 0),
+  legend.margin        = margin(0, 0, 0, 0),
+  legend.key.size      = unit(0.7, "lines"),      # compact legend
+  legend.key.spacing   = unit(0.5, "lines"),
+  legend.key.spacing.x = unit(1.2, "lines"),
+  legend.text          = element_text(size = 18, face = "italic"),
+  legend.title         =  NULL, 
+  legend.text.align  = 0.5,
+  legend.title.align = 0.5
+)
+
+#Length
+boxplot_ant_length <- ggplot(df, aes(x = ant_species, y = (ant_length), 
+                                colour = ant_species, fill =  ant_species)) +
+  boxp_distribution +
+  boxp_style +
+  #boxp_violin +
+  plot_style+ 
+  labs( y = "Ant body length [mm]",
+        x ="",
+        fill = NULL)+
+  without_y_achse +
+  #without_x_achse +
+  coord_flip() +
+  boxp_legend_theme 
+boxplot_ant_length
+
+
+#Width
+boxplot_ant_width <- ggplot(df, aes(x = ant_species, y = (ant_width), 
+                                     colour = ant_species, fill =  ant_species)) +
+  boxp_distribution +
+  boxp_style +
+  #boxp_violin +
+  plot_style+ 
+  labs( y = "Ant body width [mm]",
+        x ="",
+        fill = NULL)+
+  without_y_achse +
+  #without_x_achse +
+  coord_flip() +
+  boxp_legend_theme 
+boxplot_ant_width
+
+#Weight
+boxplot_ant_weight <- ggplot(df, aes(x = ant_species, y = (1000*ant_weight), 
+                                  colour = ant_species, fill =  ant_species)) +
+  boxp_distribution +
+  boxp_style +
+  #boxp_violin +
+  plot_style+ 
+  labs( y = "Ant weight [mg]",
+        x ="",
+        fill = NULL)+
+  without_y_achse +
+  #without_x_achse +
+  coord_flip() +
+  boxp_legend_theme 
+boxplot_ant_weight
+
+
+
+
+                  ######### D. Combining all Boxplots #######
+
+#Panel definition
+boxp_panel <- theme( 
+  panel.border      = element_blank(),     # no frame around panel
+  panel.grid.major  = element_blank(),     # no doted lines
+  panel.grid.minor  = element_blank(),
+  panel.background  = element_blank(),     
+  plot.background   = element_blank(),
+  )
+
+#Preperation of individual plots
+boxplot_ant_length_a  <- boxplot_ant_length + boxp_panel +
+  theme(legend.position = "none") +
+  
+boxplot_ant_width_a   <- boxplot_ant_width + boxp_panel +
+  theme(legend.position = "none") + 
+  scale_x_continuous(limits = lims_width, breaks = pretty(lims_width, n = 4))
+boxplot_ant_weight_a  <- boxplot_ant_weight + boxp_legend_theme + boxp_panel +
+  
+
+#Combining everything
+boxplot_ant_biometrics <- (boxplot_ant_length_a + boxplot_ant_width_a + 
+                             boxplot_ant_weight_a) +
+  theme( plot.margin      = margin(5, 20, 5, 20), # between Panels
+         panel.spacing    = unit(0.8, "lines"),
+         )      
+
+# file save
+jpeg(file = "Boxplot Biometrics Ants.jpg",
+     width = 60, height = 18, units = "cm", res = 300)
+boxplot_ant_biometrics
+dev.off()
+
+lims_length <- c( 0, 14)
+lims_weight <- c( 0, 44)
+lims_width <- c(0,4.3)
+
+#Cleaning legends and Axis befor combination
+boxplot_ant_length_c  <- boxplot_ant_length_a  +  labs (y = "") +
+  scale_y_continuous(position = "right")
+boxplot_ant_width_c   <- boxplot_ant_width_a   + labs (y = "") +
+  scale_y_continuous(position = "right")
+boxplot_ant_weight_c  <- boxplot_ant_weight_a + theme(legend.position = "none") +
+  scale_y_continuous(position = "right", limits = c()) + labs (y = "")
+
+
+#Combining everything
+boxplot_ant_biometrics_c <- (boxplot_ant_length_c + boxplot_ant_width_c + 
+                             boxplot_ant_weight_c) +
+  theme( plot.margin      = margin(5, 20, 5, 20),
+         panel.spacing    = unit(0.8, "lines"))      # Abstand zwischen Panels
+
+
+All_biomet_plot <- (plot_ant_biometrics / boxplot_ant_biometrics_c) +
+  theme( plot.margin      = margin(5, 20, 5, 20),
+         panel.spacing    = unit(0.8, "lines"))
+
+
+jpeg(file = "All Biometrics Ants.jpg",
+     width = 60, height = 32, units = "cm", res = 300)
+All_biomet_plot
+dev.off()
+
+
+
+
+
+
+
+
 
 #==============================================================================#
-                 ##### 1.2 Allometry between Ants ##### 
+          ##### 1.2 Allometry between Ants ##### 
 #==============================================================================#
-###### 1.2.1 Ant length vs. ants width #####
+          ###### 1.2.1 Ant length vs. ants width #####
 
                       # A. Linear Regression Models
 #-----------------------------------------------------------------------------#
@@ -168,7 +521,7 @@ anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 #-----------------------------------------------------------------------------#
 ant_length_width <- ggplot(df, aes(x = ant_length, y = ant_width,
                                        color = ant_species)) +
-  geom_point(alpha = 0.3, size = 1.5) +     # slightly transparent points
+  geom_point(alpha = 0.5, size = 1.5) +     # slightly transparent points
   geom_smooth(aes(color = NULL),    # remove species grouping for the line
               method = "lm", 
               se = TRUE, 
@@ -183,17 +536,17 @@ ant_length_width <- ggplot(df, aes(x = ant_length, y = ant_width,
   labs(
     x = "Ant body length (mm)",
     y = "Ant body width (mm)",
-    color = "Species",
-    title = "Relationship between body length and width in Dorylus ants"
+    color = "Species"
   )
 
-jpeg(filename = "Relationships length width ants.jpg", width = 20, 
+jpeg(filename = "Relationships length width ants.jpg", width = 60, 
      height = 18, units = "cm", res = 300)
 ant_length_width
 dev.off()
 
 
-                            # C. Linear Mixed Models
+                            
+          ####### C. Linear Mixed Models  - WILL NOT USE THIS#######            
 #-----------------------------------------------------------------------------#
 #Creating a LMM based on LRM with only main/fixed effects 
 #This includes possible random variation due to the raids (adds random effect)
@@ -278,7 +631,7 @@ ggplot(df, aes(x = log10(ant_length), y = log10(ant_width),
   )
 
 
-###### 1.2.2 Ant length vs. ants weight #####
+          ###### 1.2.2 Ant length vs. ants weight #####
 ant_biometrics_2 <- lm(log10(ant_length) ~ log10(ant_weight) * ant_species
                      + forest_type , data = df)
 
@@ -363,39 +716,6 @@ boxplot(prey_shape ~ ant_species, data = df_dis,
         main = "Prey shape by ant species", ylab = "Prey shape", xlab = "")
 boxplot(prey_area ~ ant_species, data = df_dis, 
         main = "Prey area by ant species", ylab = "Prey area [mm^2]", xlab = "")
-
-
-###### 2.1.2 Testing against Forest #####
-#Welch t-test 
-t.test(log10(prey_length) ~ forest_type, data = df_dis)
-t.test(log10(prey_width) ~ forest_type, data = df_dis)
-t.test(log10(prey_weight*1000) ~ forest_type, data = df_dis)
-t.test(log10(prey_shape) ~ forest_type, data = df_dis)
-t.test(log10(prey_area) ~ forest_type, data = df_dis)
-
-#Effektgröße (Cohen’s d)
-cohens_d(log10(prey_length) ~ forest_type, data = df_dis)
-cohens_d(log10(prey_width) ~ forest_type, data = df_dis)
-cohens_d(log10(prey_weight*1000) ~ forest_type, data = df_dis)
-cohens_d(log10(prey_shape) ~ forest_type, data = df_dis)
-cohens_d(log10(prey_area) ~ forest_type, data = df_dis)
-
-
-#Plotting the results 
-#Box plot by forest
-par(mfrow = c(1, 5))
-boxplot(prey_length ~ forest_type, data = df_dis,
-        main = "Prey length by forest type", ylab = "Prey length [mm]", xlab = "")
-boxplot(prey_width ~ forest_type, data = df_dis, 
-        main = "Prey width by forest types", ylab = "Prey width [mm]", xlab = "")
-boxplot((1000*prey_weight)~ forest_type, data = df_dis,
-        main = "Prey weight by forest types", ylab = "Prey weight [mg]", xlab = "")
-boxplot(prey_shape ~ forest_type, data = df_dis, 
-        main = "Prey shape by forest types", ylab = "Prey shape", xlab = "")
-boxplot(prey_area ~ forest_type, data = df_dis, 
-        main = "Prey area by forest types", ylab = "Prey area [mm^2]", xlab = "")
-
-
 
 
 #=============================================================================
@@ -734,19 +1054,4 @@ df_multi <- df_multi %>%
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
 
-#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢿⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢀⣾⣿⣿⣷⡀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠘⣿⣿⣿⣿⠃⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣏⣉⠙⠛⠿⣿⣿⣿⣦⡾⠋⠙⢷⣴⣿⣿⣿⠿⠛⠋⣉⣹⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⢻⣿⣟⠀⠀⠀⠀⣻⣿⡟⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠙⢿⣷⢤⡤⣾⡿⠋⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣿⠉⠙⠛⠷⢼⡇⠀⠀⢸⡧⠾⠛⠋⠉⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⠇⢰⣿⣿⣶⡼⣷⠀⠀⣾⢧⣶⣾⣿⡆⠸⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⡏⢠⣿⣿⠿⠋⣠⣿⡶⢶⣿⣄⠙⠿⣿⣿⡄⢹⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⡟⢠⣾⣿⠁⣴⣾⠋⠁⠀⠀⠈⠙⣷⣦⠈⣿⣷⡄⢻⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⠏⣠⣿⣿⣿⠀⣿⣧⠀⠀⠀⠀⠀⠀⣼⣿⠀⣿⣿⣿⣄⠹⣿⣿⣿⣿
-#⣿⣿⣿⣷⣼⣿⣿⣿⡟⢀⣿⣿⡄⠀⠀⠀⠀⢠⣿⣿⡀⢻⣿⣿⣿⣧⣾⣿⣿⣿
-#⣿⣿⣿⣿⣿⣿⣿⣿⠇⣸⣿⣿⣿⣄⠀⠀⣠⣿⣿⣿⣇⠸⣿⣿⣿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⡿⠛⣁⣴⣿⣿⣿⣿⣿⣦⣴⣿⣿⣿⣿⣿⣦⣈⠛⢿⣿⣿⣿⣿⣿
-#⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿
 
