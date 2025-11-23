@@ -44,21 +44,21 @@ install.packages("ggbeeswarm")
 install.packages("ggdist")
 
 #### Library ####
-library(gmp)                                #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢿⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-library(bipartite)                          #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢀⣾⣿⣿⣷⡀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-library(ggforce)                            #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠘⣿⣿⣿⣿⠃⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-library(tidyquant)                          #⣿⣿⣿⣿⣏⣉⠙⠛⠿⣿⣿⣿⣦⡾⠋⠙⢷⣴⣿⣿⣿⠿⠛⠋⣉⣹⣿⣿⣿⣿
-library(EcoSimR)                            #⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⢻⣿⣟⠀⠀⠀⠀⣻⣿⡟⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿
-library(vegan)                              #⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠙⢿⣷⢤⡤⣾⡿⠋⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
-library(ggeffects)                          #⣿⣿⣿⣿⣿⣿⣿⣿⠉⠙⠛⠷⢼⡇⠀⠀⢸⡧⠾⠛⠋⠉⣿⣿⣿⣿⣿⣿⣿⣿
-library(mvabund)                            #⣿⣿⣿⣿⣿⣿⣿⠇⢰⣿⣿⣶⡼⣷⠀⠀⣾⢧⣶⣾⣿⡆⠸⣿⣿⣿⣿⣿⣿⣿
-library(ggplot2)                            #⣿⣿⣿⣿⣿⣿⡏⢠⣿⣿⠿⠋⣠⣿⡶⢶⣿⣄⠙⠿⣿⣿⡄⢹⣿⣿⣿⣿⣿⣿
-library(effectsize)                         #⣿⣿⣿⣿⣿⡟⢠⣾⣿⠁⣴⣾⠋⠁⠀⠀⠈⠙⣷⣦⠈⣿⣷⡄⢻⣿⣿⣿⣿⣿
-library(cooccur)                            #⣿⣿⣿⣿⠏⣠⣿⣿⣿⠀⣿⣧⠀⠀⠀⠀⠀⠀⣼⣿⠀⣿⣿⣿⣄⠹⣿⣿⣿⣿
-library(tidyverse)                          #⣿⣿⣿⣷⣼⣿⣿⣿⡟⢀⣿⣿⡄⠀⠀⠀⠀⢠⣿⣿⡀⢻⣿⣿⣿⣧⣾⣿⣿⣿
-require(graphics)                           #⣿⣿⣿⣿⣿⣿⣿⣿⠇⣸⣿⣿⣿⣄⠀⠀⣠⣿⣿⣿⣇⠸⣿⣿⣿⣿⣿⣿⣿⣿
-library(devtools)                           #⣿⣿⣿⣿⣿⡿⠛⣁⣴⣿⣿⣿⣿⣿⣦⣴⣿⣿⣿⣿⣿⣦⣈⠛⢿⣿⣿⣿⣿⣿
-library(ggord)                              #⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿
+library(gmp)                                
+library(bipartite)                          
+library(ggforce)            
+library(tidyquant)                          
+library(EcoSimR)                            
+library(vegan)                              
+library(ggeffects)                          
+library(mvabund)                            
+library(ggplot2)                            
+library(effectsize)                         
+library(cooccur)                            
+library(tidyverse)                          
+require(graphics)                           
+library(devtools)                           
+library(ggord)                              
 library(ggthemes)
 library(RColorBrewer)
 library(viridis)
