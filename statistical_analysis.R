@@ -5,7 +5,7 @@ library(effectsize)                               #       '._ .:. _.'       O
 library(tidyverse)                                #        _ '|Y|' _        R 
 library(dplyr)                                    #      ,` `>\ /<` `,      Y
 library(lmtest)                                   #     ` ,-`  I  `-, `     L
-library(performance) #e.g. for ICC calculations   #       |   /=\   |       U
+library(performance)  #e.g. for ICC calculations  #       |   /=\   |       U
 library(lme4)         #for LMM´s                  #     ,-'   |=|   '-,     S
 library(DHARMa)                                   #          ( = )        
 library(ggpattern)                                #           \_/       
@@ -13,6 +13,9 @@ library(patchwork)   #ombining plots              # # # # # # # # # # # # # # #
 library(cowplot) 
 library(gghalves)    #violin plots in boxplots
 library(ggforce)
+library(kSamples)    #KS and DA Test 
+library(diptest)  
+library(multimode)   #Silverman´s test 
 
 #reading in data
 df <- read.delim(
@@ -100,11 +103,11 @@ df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weig
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
 #==============================================================================
-          #### 1. Ant Biometrics Analysis ####
+#### 1. Ant Biometrics Analysis ####
 #==============================================================================#
 
 #==============================================================================#
-          ##### 1.1 Size differences between Ant species ##### 
+##### 1.1 Size differences between Ant species ##### 
 #==============================================================================#
 
 
@@ -118,9 +121,101 @@ cohens_d(log10(ant_length) ~ ant_species, data = df)
 cohens_d(log10(ant_weight*1000) ~ ant_species, data = df)
 cohens_d(log10(ant_width) ~ ant_species, data = df)
 
+#Kolmogorov–Smirnov-Test
+#compares whole distribution between two groups
+#non parametric and sensitive vor varianzes 
+#empfindlich auf globalen Unterschied
+
+#Pull biometric data per species
+len_wil <- df %>% filter(ant_species == "D. wilverthi") %>% pull(ant_length)
+len_sjo <- df %>% filter(ant_species == "D. sjostedti") %>% pull(ant_length)
+wid_wil <- df %>% filter(ant_species == "D. wilverthi") %>% pull(ant_width)
+wid_sjo <- df %>% filter(ant_species == "D. sjostedti") %>% pull(ant_width)
+wei_wil <-df%>% filter(ant_species == "D. wilverthi") %>% pull(ant_weight)*1000
+wei_sjo <-df%>% filter(ant_species == "D. sjostedti") %>% pull(ant_weight)*1000
 
 
-          ######### A. Histograms #######
+#K-S Test
+ks_len <- ks.test(len_wil, len_sjo)
+ks_len
+ks_wid <- ks.test(wid_wil, wid_sjo)
+ks_wid
+ks_wei <- ks.test(wei_wil, wei_sjo)
+ks_wei
+
+
+# Anderson–Darling-Test
+#more sensitive in the taisl, then KS
+#empfindlich auf Tail-Unterschiede
+ad_len <- ad.test(len_wil, len_sjo)
+ad_len
+ad_wid <- ad.test(wid_wil, wid_sjo)
+ad_wid
+ad_wei <- ad.test(wei_wil, wei_sjo)
+ad_wei
+
+##------------------ Hartigan´s dip test for multimodality ------------------##
+# here we test if there are more than one peak in our data 
+
+# Length: 
+dip_len_wil <- dip.test(len_wil)   
+dip_len_sjo <- dip.test(len_sjo)  
+
+# Width: 
+dip_wid_wil <- dip.test(wid_wil)  
+dip_wid_sjo <- dip.test(wid_sjo)  
+
+# Weight
+dip_wei_wil <- dip.test(wei_wil)  
+dip_wei_sjo <- dip.test(wei_sjo)
+
+# Rusults
+dip_len_wil; dip_len_sjo
+dip_wid_wil; dip_wid_sjo
+dip_wei_wil; dip_wei_sjo
+
+
+
+##------------------ Silverman's test for number of modes ------------------##
+#here we test if the distribution has a maximum of k modi (peaks)
+#Set R for bootstraping to 999 for easy computing. 
+
+# D. wilverthi – length
+silv_len_wil_k1 <- modetest(len_wil, mod0 = 1, method = "SI", B = 999)  
+silv_len_wil_k2 <- modetest(len_wil, mod0 = 2, method = "SI", B = 999)  
+
+# D. sjostedti – length
+silv_len_sjo_k1 <- modetest(len_sjo, mod0 = 1, method = "SI", B = 999)
+silv_len_sjo_k2 <- modetest(len_sjo, mod0 = 2, method = "SI", B = 999)
+
+# D. wilverthi – width
+silv_wid_wil_k1 <- modetest(wid_wil, mod0 = 1, method = "SI", B = 999)
+silv_wid_wil_k2 <- modetest(wid_wil, mod0 = 2, method = "SI", B = 999)
+
+# D. sjostedti – width
+silv_wid_sjo_k1 <- modetest(wid_sjo, mod0 = 1, method = "SI", B = 999)
+silv_wid_sjo_k2 <- modetest(wid_sjo, mod0 = 2, method = "SI", B = 999)
+
+# D. wilverthi – weight (mg)
+silv_wei_wil_k1 <- modetest(wei_wil, mod0 = 1, method = "SI", B = 999)
+silv_wei_wil_k2 <- modetest(wei_wil, mod0 = 2, method = "SI", B = 999)
+
+# D. sjostedti – weight (mg)
+silv_wei_sjo_k1 <- modetest(wei_sjo, mod0 = 1, method = "SI", B = 999)
+silv_wei_sjo_k2 <- modetest(wei_sjo, mod0 = 2, method = "SI", B = 999)
+
+# Results
+silv_len_wil_k1; silv_len_wil_k2 
+silv_len_sjo_k1; silv_len_sjo_k2
+silv_wid_wil_k1; silv_wid_wil_k2
+silv_wid_sjo_k1; silv_wid_sjo_k2
+silv_wei_wil_k1; silv_wei_wil_k2
+silv_wei_sjo_k1; silv_wei_sjo_k2
+
+
+
+
+            ######### A. Histograms #######
 #-----------------------------------------------------------------------------#
 #overview
 par(mfrow = c(1, 3))
@@ -210,7 +305,9 @@ plot_ant_weight <- ggplot(df, aes(x = (1000*ant_weight),
   )
 plot_ant_weight
 
-          ######### B. Combining all Histogramms#######
+
+
+            ######### B. Combining all Histogramms#######
 
 #defining universal legend theme 
 ant_legend_theme <- theme(
@@ -285,7 +382,7 @@ dev.off()
 
 
 
-          ######### C. Boxplots #######
+            ######### C. Boxplots #######
 #Overview
 par(mfrow = c(1, 3))
 boxplot(ant_length ~ ant_species, data = df, main = "Ant length by species",
@@ -427,7 +524,7 @@ boxplot_ant_weight
 
 
 
-                  ######### D. Combining all Boxplots #######
+            ######### D. Combining all Boxplots #######
 
 #Panel definition
 boxp_panel <- theme( 
@@ -458,9 +555,7 @@ jpeg(file = "Boxplot Biometrics Ants_v2.jpg",
 boxplot_ant_biometrics
 dev.off()
 
-                  ######### E. Combining all Plots #######
-
-
+            ######### E. Combining all Plots #######
 
 #Preparing Boxplots
 boxplot_ant_length_c  <- boxplot_ant_length_a  +  labs (y = "") +
@@ -478,8 +573,6 @@ boxplot_ant_biometrics_c <- (boxplot_ant_length_c + boxplot_ant_width_c +
   theme( plot.margin      = margin(-10, 20, 5, 20),
          panel.spacing    = unit(1.2, "lines"),
          panel.spacing.y =  unit(0.1, "lines"))      # Abstand zwischen Panels
-
-
 
 
 plot_ant_weight_c <- plot_ant_weight + 
@@ -519,18 +612,12 @@ dev.off()
 
 
 
-
-
-
-
-
-
 #==============================================================================#
-          ##### 1.2 Allometry between Ants ##### 
+##### 1.2 Allometry between Ants ##### 
 #==============================================================================#
-          ###### 1.2.1 Ant length vs. ants width #####
+###### 1.2.1 Ant length vs. ants width #####
 
-                      # A. Linear Regression Models
+                          # A. LRM - WIDTH vs. LENGTH 
 #-----------------------------------------------------------------------------#
 #base model no main effects
 ant_biomet_width1 <- lm(log10(ant_width) ~ log10(ant_length), data = df)
@@ -551,41 +638,67 @@ ant_biomet_width3 <- lm(log10(ant_width) ~ log10(ant_length) * ant_species
 
 summary(ant_biomet_width3)
 confint(ant_biomet_width3)
-#plot(rel_load2w)
+#plot(rel_load2w) #<-not used
 AIC(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 
 
-                      # B. Plot for LRM (ant_biomet_width3)
+                         # B. Plot - WIDTH vs. LENGTH 
 #-----------------------------------------------------------------------------#
-ant_length_width <- ggplot(df, aes(x = ant_length, y = ant_width,
-                                       color = ant_species)) +
-  geom_point(alpha = 0.5, size = 1.5) +     # slightly transparent points
-  geom_smooth(aes(color = NULL),    # remove species grouping for the line
-              method = "lm", 
-              se = TRUE, 
-              linewidth = 1,
-              color = "grey9") + 
-  scale_x_log10() +     
-  scale_y_log10() + 
-  scale_colour_manual(values = c("D. wilverthi" = "#56B4E9",
-                                 "D. sjostedti" = "#E69F00")) +
-  theme_clean(base_size = 14) +
-  theme(legend.position = "bottom", plot.title = element_text(size = 14)) +
-  labs(
-    x = "Ant body length (mm)",
-    y = "Ant body width (mm)",
-    color = "Species"
+#Defining theme for LRM Plots once - reuse it in every plot
+lrm_legend_theme <- theme(
+  legend.position      = "bottom",         
+  legend.justification = "center",
+  legend.direction     = "horizontal",
+  legend.box           = "horizontal",
+  legend.background    = element_rect(fill = "white", colour = NA),
+  legend.box.margin    = margin(0, 0, 0, 0),
+  legend.margin        = margin(-5, 0, 0, 0),
+  legend.key.size      = unit(0.8, "lines"),
+  legend.key.spacing   = unit(0.5, "lines"),
+  legend.key.spacing.x = unit(0.8, "lines"),
+  legend.text          = element_text(size = 18, face = "italic",  hjust = 0.5),
+  legend.title         = element_blank(),
+  legend.text.align    = 0.5,
+  plot.title           = element_text(hjust = 1, size = 18)
+)
+
+# Combining most styles used
+lrm_style <- list(
+  theme_clean(base_size = 18),       # overall text size
+  clean_panel_theme,                 # axes + panel cleanup
+  lrm_legend_theme,                  # legend at bottom, italic species
+  theme( plot.margin  = margin(t = 5.5, r = 20, b = 10, l = 5.5),
+         axis.title.x = element_text(hjust = 0.55),
+         axis.title.y = element_text(vjust = -0.5)),
+  scale_colour_manual(values = c( "D. wilverthi" = "#56B4E9",
+                                  "D. sjostedti" = "#E69F00") ) 
   )
 
-jpeg(filename = "Relationships length width ants.jpg", width = 60, 
+ant_length_width <- ggplot(df, aes(x = ant_length,y = ant_width,
+                                    colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Ant body length [mm]",
+        y     = "Ant head width [mm]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_ant_length_width.jpg", width = 20, 
      height = 18, units = "cm", res = 300)
 ant_length_width
 dev.off()
 
 
                             
-          ####### C. Linear Mixed Models  - WILL NOT USE THIS#######            
+            ######### C. Linear Mixed Models  - WILL NOT USE THIS#######            
 #-----------------------------------------------------------------------------#
 #Creating a LMM based on LRM with only main/fixed effects 
 #This includes possible random variation due to the raids (adds random effect)
@@ -670,18 +783,120 @@ ggplot(df, aes(x = log10(ant_length), y = log10(ant_width),
   )
 
 
-          ###### 1.2.2 Ant length vs. ants weight #####
-ant_biometrics_2 <- lm(log10(ant_length) ~ log10(ant_weight) * ant_species
-                     + forest_type , data = df)
 
-summary(ant_biometrics_2)
-confint(ant_biometrics_2)
+###### 1.2.2 Ant length vs. ants weight #####
 
+
+                         # A. LRM - WEIGHT vs. LENGTH
+#-----------------------------------------------------------------------------#
+#base model no main effects
+ant_biomet_weight1 <- lm(log10(ant_weight*1000) ~ log10(ant_length), data = df)
+
+#model with only main effects
+ant_biomet_weight2 <- lm(log10(ant_weight*1000) ~ log10(ant_length) + ant_species
+                        + forest_type , data = df)
+
+#model with interacting effect specis an main effects 
+ant_biomet_weight3 <- lm(log10(ant_weight*1000) ~ log10(ant_length) * ant_species
+                        + forest_type , data = df)
+
+summary(ant_biomet_weight3)
+confint(ant_biomet_weight3)
+AIC(ant_biomet_weight1, ant_biomet_weight2, ant_biomet_weight3)
+anova(ant_biomet_weight1, ant_biomet_weight2, ant_biomet_weight3)
+
+
+                         # B. Plot  WEIGHT vs. LENGTH
+#-----------------------------------------------------------------------------#
+ant_length_weight <- ggplot(df, aes(x = ant_length,y = ant_weight * 1000,
+                                      colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+    method = "lm",
+    se = TRUE,
+    linewidth = 1,
+    colour = "grey9",
+    fill   = "grey66",
+    alpha  = 0.9  ) +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Ant body length [mm]",
+        y     = "Ant weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_ant_length_weight.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+ant_length_weight
+dev.off()
+
+
+
+###### 1.2.3 Ant weight vs. ants width #####
+
+                        # A. LRM - WEIGHT vs. WIDTH
+#-----------------------------------------------------------------------------#
+#base model no main effects
+ant_biomet_ww1 <- lm(log10(ant_weight*1000) ~ log10(ant_width), data = df)
+
+#model with only main effects
+ant_biomet_ww2 <- lm(log10(ant_weight*1000) ~ log10(ant_width) + ant_species
+                         + forest_type , data = df)
+
+#model with interacting effect specis an main effects 
+ant_biomet_ww3 <- lm(log10(ant_weight*1000) ~ log10(ant_width) * ant_species
+                         + forest_type , data = df)
+
+summary(ant_biomet_ww3)
+confint(ant_biomet_ww3)
+AIC(ant_biomet_ww1, ant_biomet_ww2, ant_biomet_ww3)
+anova(ant_biomet_ww1, ant_biomet_ww2, ant_biomet_ww3)
+
+
+                       # B. Plot  WEIGHT vs. WIDTH
+#-----------------------------------------------------------------------------#
+
+ant_width_weight <- ggplot(df, aes(x = ant_width,y = ant_weight * 1000,
+                                    colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Ant head width [mm]",
+        y     = "Ant weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_ant_weight_width.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+ant_width_weight
+dev.off()
+
+
+###### 1.2.4 Combining all LRM Plots #####
+
+ant_length_width_c <- ant_length_width + theme(legend.position = "none")
+ant_width_weight_c <- ant_width_weight + theme(legend.position = "none")
+
+lrm_ants <- (ant_length_width_c + ant_length_weight + ant_width_weight_c) +
+  boxp_panel
+
+jpeg(filename = "LRM_Panel.jpg", width = 60, 
+     height = 18, units = "cm", res = 300)
+lrm_ants
+dev.off()
 
 
 
 
 #=============================================================================#
+
                       #### 2. Prey Biometrics Analysis #### 
 #=============================================================================#
 ##### Preparation of raw data and setting df #####
