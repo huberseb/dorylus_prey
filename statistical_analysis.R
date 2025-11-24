@@ -16,6 +16,7 @@ library(ggforce)
 library(kSamples)    #KS and DA Test 
 library(diptest)  
 library(multimode)   #Silverman´s test 
+library(ggbeeswarm)  #density bases point clouds
 
 #reading in data
 df <- read.delim(
@@ -895,9 +896,8 @@ dev.off()
 
 
 
-#=============================================================================#
-
-                      #### 2. Prey Biometrics Analysis #### 
+#######==============================.===================================#######
+#### 2. Prey Biometrics Analysis #### 
 #=============================================================================#
 ##### Preparation of raw data and setting df #####
 #reading in data
@@ -925,11 +925,233 @@ df_dis$forest_type <- factor(df_dis$forest_type)
 df_dis["prey_shape"] <- df_dis$prey_length / df_dis$prey_width
 df_dis["prey_area"] <- df_dis$prey_length * df_dis$prey_width
 
-#==============================================================================
-                  ##### 2.1 Size differences in Prey Items ##### 
-#==============================================================================#
 
-###### 2.1.1 Testing against Ants #####
+#=============================================================================#
+##### 2.1 Size differences in Prey Items ##### 
+#=============================================================================#
+
+#Welch t-test - against FOREST TYP
+t.test(log10(prey_length) ~ forest_type, data = df_dis)
+t.test(log10(prey_width) ~ forest_type, data = df_dis)
+t.test(log10(prey_weight*1000) ~ forest_type, data = df_dis)
+t.test(log10(prey_area) ~ forest_type, data = df_dis)
+t.test(log10(prey_shape) ~ forest_type, data = df_dis)
+
+#Welch t-test - against ANT SPECIES
+t.test(log10(prey_length) ~ ant_species, data = df_dis)
+t.test(log10(prey_width) ~ ant_species, data = df_dis)
+t.test(log10(prey_weight*1000) ~ ant_species, data = df_dis)
+t.test(log10(prey_area) ~ ant_species, data = df_dis)
+t.test(log10(prey_shape) ~ ant_species, data = df_dis)
+
+
+#Checking data with histogarms and Boxplots
+par(mfrow = c(2, 3))
+par(mar = c(4, 4, 2, 1))
+hist(df_dis$prey_length, main = "Prey length", col = "grey",
+     xlab = "length [mm]", ylim = c(0, 1000))
+hist(df_dis$prey_width, main = "Prey width [mm]",col = "grey",
+     xlab = "width [mm]", ylim = c(0, 1000))
+hist((1000*df_dis$prey_weight), main = "Prey weight", col = "grey",
+     xlab = "Weight [mg]", ylim = c(0, 2500))
+hist(df_dis$prey_area, main = expression("Prey area ["*mm^2*+"]"),col = "grey",
+     xlab = "width [mm]", ylim = c(0, 1000))
+hist(df_dis$prey_shape, main = "Prey shape",col = "grey",
+     xlab = "Shape Index (length/width)", ylim = c(0, 3000))
+
+# Against FOREST TYP
+par(mfrow = c(2, 3))
+par(mar = c(4, 4, 2, 1))
+boxplot(prey_length ~ forest_type, data = df_dis, main = "Prey length by forest typ",
+        ylab = "Prey length [mm]", xlab = "")
+boxplot(prey_width ~ forest_type, data = df_dis, main = "Prey width by forest typ",
+        ylab = "Ant width [mm]", xlab = "")
+boxplot((1000*prey_weight)~ forest_type, data = df_dis,
+        main = "Prey weight by forest typ", ylab = "Prey weight [mg]", xlab = "")
+boxplot(prey_area ~ forest_type, data = df_dis, main = "Prey area by forest typ",
+        ylab = expression("Prey area ["*mm^2*+"]"), xlab = "")
+boxplot(prey_shape ~ forest_type, data = df_dis, main = "Prey shape",
+        ylab = "Shape Index (length/width)", xlab = "")
+
+#Against ANT SPECIES
+par(mfrow = c(2, 3))
+par(mar = c(4, 4, 2, 1))
+boxplot(prey_length ~ ant_species, data = df_dis, main = "Prey length by forest typ",
+        ylab = "Prey length [mm]", xlab = "")
+boxplot(prey_width ~ ant_species, data = df_dis, main = "Prey width by forest typ",
+        ylab = "Ant width [mm]", xlab = "")
+boxplot((1000*prey_weight)~ ant_species, data = df_dis,
+        main = "Prey weight by forest typ", ylab = "Prey weight [mg]", xlab = "")
+boxplot(prey_area ~ ant_species, data = df_dis, main = "Prey area by forest typ",
+        ylab = expression("Prey area ["*mm^2*+"]"), xlab = "")
+boxplot(prey_shape ~ ant_species, data = df_dis, main = "Prey shape",
+        ylab = "Shape Index (length/width)", xlab = "")
+
+
+
+                      ######### C. Boxplots #######
+# numeric positioning of forest (1 = primary, 2 = secondary)
+# with ant specivic scaling 
+offset <- 0.22   # settin distance of boxes within forest 
+
+#adding numeric positioning 
+df_dis <- df_dis |>mutate(
+    forest_center = if_else(forest_type == "primary", 1, 2),      
+    species_num = as.numeric(ant_species),          
+    x_pos       = forest_center + if_else(species_num == 1,
+                                       -offset, offset))
+
+#Defining l Style
+boxp_style_prey <- list(
+  geom_boxplot( aes( x = x_pos, group = interaction(forest_type, ant_species)),
+    width          = 0.3,      
+    size           = 0.6,      
+    colour         = "grey11", # lines box
+    alpha          = 0.55,     
+    outliers       = FALSE,    
+    outlier.shape  = 21,
+    outlier.colour = "grey11",
+    outlier.fill   = NA,
+    outlier.size   = 1,
+    outlier.stroke = 0.3,
+    outlier.alpha  = 0.3,
+    staplewidth    = 0.5,
+    show.legend = FALSE,
+    position       = position_dodge2(
+      width    =  0.65 ,         # distance species boxes within forest typ
+      preserve = "single")),
+  dorylus_colour,
+  theme_clean(base_size = 18) %+replace% theme(
+    panel.grid.major   = element_blank(),
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.background   = element_blank(),
+    panel.border       = element_blank(),
+    plot.title         = element_text(hjust = 1)
+  ))
+
+# Pointcloud with Outliners
+boxp_distribution_prey <- list(
+    geom_sina(
+      aes(x = x_pos,             # uses defined position in regard of forest
+          group = interaction(forest_type, ant_species)),
+      size     = 0.8,             
+      alpha    = 0.25,             
+      color    = "grey75",         
+      method   = "density",
+      maxwidth = 0.40              # for point cloud 
+    ))
+
+boxp_legend_theme_prey <- list (theme(
+    legend.position      = c(0.98, 0.98),           # inwards, top right
+    legend.justification = c("right", "top"),       # anker point
+    legend.background    = element_rect(fill = "white", colour = NA),
+    legend.box.margin    = margin(0, 0, 0, 0),
+    legend.margin        = margin(0, 0, 0, 0),
+    legend.key.size      = unit(0.7, "lines"),      # compact legend
+    legend.key.spacing   = unit(0.5, "lines"),
+    legend.key.spacing.x = unit(1.2, "lines"),
+    legend.text          = element_text(size = 14, face = "italic"),
+    legend.title         =  NULL, 
+    legend.text.align  = 0.5,
+    legend.title.align = 0.5), 
+  guides (colour = "none",        # fill legend only
+    fill = guide_legend(
+    override.aes = list(
+      shape    = 22,
+      alpha    = 0.55,
+      size     = 5,    
+      linetype = 0  )   # no border 
+    )))
+
+# PREY LENGTH
+boxplot_prey_length <- ggplot(df_dis, aes(y = prey_length, fill = ant_species,
+                                colour = ant_species)) +
+  boxp_distribution_prey +
+  boxp_style_prey +
+  scale_x_continuous(breaks = c(1, 2),                       # Forest-center
+                     labels = c("primary", "secondary"),
+                     name   = "Forest type") + labs(y = "Prey length [mm]") +
+  labs(fill = NULL, colour = NULL) +
+  coord_cartesian(ylim = c(0, 25)) +
+  boxp_legend_theme_prey            
+boxplot_prey_length
+
+
+# PREY WIDTH
+boxplot_prey_width <- ggplot(df_dis, aes(y = prey_width, fill = ant_species,
+                                         colour = ant_species)) +
+  boxp_distribution_prey +
+  boxp_style_prey +
+  scale_x_continuous(breaks = c(1, 2),
+                     labels = c("primary", "secondary"),
+                     name   = "Forest type") +
+  labs(y = "Prey width [mm]") +
+  labs(fill = NULL, colour = NULL) +
+  boxp_legend_theme_prey
+boxplot_prey_width
+
+
+# PREY WEIGHT
+boxplot_prey_weight <- ggplot(df_dis, aes(y = prey_weight, fill = ant_species,
+                                          colour = ant_species)) +
+  boxp_distribution_prey +
+  boxp_style_prey +
+  scale_x_continuous(breaks = c(1, 2),
+                     labels = c("primary", "secondary"),
+                     name   = "Forest type") +
+  labs(y = "Prey weight [mg]") +
+  labs(fill = NULL, colour = NULL) +
+  coord_cartesian(ylim = c(0, 0.10)) +
+  boxp_legend_theme_prey
+boxplot_prey_weight
+
+
+# PREY AREA
+boxplot_prey_area <- ggplot(df_dis, aes(y = prey_area, fill = ant_species,
+                                        colour = ant_species)) +
+  boxp_distribution_prey +
+  boxp_style_prey +
+  scale_x_continuous(breaks = c(1, 2),
+                     labels = c("primary", "secondary"),
+                     name   = "Forest type") +
+  labs(y = "Prey area [mm²]") +
+  labs(fill = NULL, colour = NULL) +
+  coord_cartesian(ylim = c(0, 80)) +
+  boxp_legend_theme_prey
+boxplot_prey_area
+
+
+# PREY SHAPE
+boxplot_prey_shape <- ggplot(df_dis, aes(y = prey_shape, fill = ant_species,
+                                         colour = ant_species)) +
+  boxp_distribution_prey +
+  boxp_style_prey +
+  scale_x_continuous(breaks = c(1, 2),
+                     labels = c("primary", "secondary"),
+                     name   = "Forest type") +
+  labs(y = "Prey shape index") +
+  labs(fill = NULL, colour = NULL) +
+  coord_cartesian(ylim = c(0, 10)) +
+  boxp_legend_theme_prey
+boxplot_prey_shape
+
+
+
+
+
+
+
+
+
+
+
+
+
+###### 2.1.x Testing against Ants #####
 #Welch t-test 
 t.test(log10(prey_length) ~ ant_species, data = df_dis)
 t.test(log10(prey_width) ~ ant_species, data = df_dis)
