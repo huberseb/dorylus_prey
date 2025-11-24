@@ -103,9 +103,9 @@ df_single["relativ_loading"] <- df_single$ant_loading / (1000*df_single$ant_weig
 # multi carriers only
 df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 
-#==============================================================================
-#### 1. Ant Biometrics Analysis ####
-#==============================================================================#
+#===================================.==========================================
+
+                    #### 1. Ant Biometrics Analysis ####
 
 #==============================================================================#
 ##### 1.1 Size differences between Ant species ##### 
@@ -615,7 +615,6 @@ dev.off()
 
 #==============================================================================#
 ##### 1.2 Allometry between Ants ##### 
-#==============================================================================#
 ###### 1.2.1 Ant length vs. ants width #####
 
                           # A. LRM - WIDTH vs. LENGTH 
@@ -897,7 +896,9 @@ dev.off()
 
 
 #######==============================.===================================#######
-#### 2. Prey Biometrics Analysis #### 
+
+                   #### 2. Prey Biometrics Analysis #### 
+
 #=============================================================================#
 ##### Preparation of raw data and setting df #####
 #reading in data
@@ -989,7 +990,7 @@ boxplot(prey_shape ~ ant_species, data = df_dis, main = "Prey shape",
 
 
 
-                      ######### C. Boxplots #######
+           ######### A. Boxplot Style and Theme #######
 # numeric positioning of forest (1 = primary, 2 = secondary)
 # with ant specivic scaling 
 offset <- 0.22   # settin distance of boxes within forest 
@@ -1001,7 +1002,7 @@ df_dis <- df_dis |>mutate(
     x_pos       = forest_center + if_else(species_num == 1,
                                        -offset, offset))
 
-#Defining l Style
+#Defining Style
 boxp_style_prey <- list(
   geom_boxplot( aes( x = x_pos, group = interaction(forest_type, ant_species)),
     width          = 0.3,      
@@ -1054,7 +1055,7 @@ boxp_legend_theme_prey <- list (theme(
     legend.key.size      = unit(0.7, "lines"),      # compact legend
     legend.key.spacing   = unit(0.5, "lines"),
     legend.key.spacing.x = unit(1.2, "lines"),
-    legend.text          = element_text(size = 14, face = "italic"),
+    legend.text          = element_text(size = 18, face = "italic"),
     legend.title         =  NULL, 
     legend.text.align  = 0.5,
     legend.title.align = 0.5), 
@@ -1067,16 +1068,18 @@ boxp_legend_theme_prey <- list (theme(
       linetype = 0  )   # no border 
     )))
 
+           ######### B. Generating Boxplots #######
+
 # PREY LENGTH
 boxplot_prey_length <- ggplot(df_dis, aes(y = prey_length, fill = ant_species,
                                 colour = ant_species)) +
   boxp_distribution_prey +
   boxp_style_prey +
   scale_x_continuous(breaks = c(1, 2),                       # Forest-center
-                     labels = c("primary", "secondary"),
-                     name   = "Forest type") + labs(y = "Prey length [mm]") +
+                     labels = c("primary forest", "secondary forest"),
+                     name   = NULL) + labs(y = "Prey length [mm]") +
   labs(fill = NULL, colour = NULL) +
-  coord_cartesian(ylim = c(0, 25)) +
+  coord_cartesian(ylim = c(0, 20)) +
   boxp_legend_theme_prey            
 boxplot_prey_length
 
@@ -1087,8 +1090,8 @@ boxplot_prey_width <- ggplot(df_dis, aes(y = prey_width, fill = ant_species,
   boxp_distribution_prey +
   boxp_style_prey +
   scale_x_continuous(breaks = c(1, 2),
-                     labels = c("primary", "secondary"),
-                     name   = "Forest type") +
+                     labels = c("primary forest", "secondary forest"),
+                     name   = NULL) +
   labs(y = "Prey width [mm]") +
   labs(fill = NULL, colour = NULL) +
   boxp_legend_theme_prey
@@ -1096,16 +1099,16 @@ boxplot_prey_width
 
 
 # PREY WEIGHT
-boxplot_prey_weight <- ggplot(df_dis, aes(y = prey_weight, fill = ant_species,
+boxplot_prey_weight <- ggplot(df_dis, aes(y = (prey_weight*1000), fill = ant_species,
                                           colour = ant_species)) +
   boxp_distribution_prey +
   boxp_style_prey +
   scale_x_continuous(breaks = c(1, 2),
-                     labels = c("primary", "secondary"),
-                     name   = "Forest type") +
+                     labels = c("primary forest", "secondary forest"),
+                     name   = NULL) +
   labs(y = "Prey weight [mg]") +
   labs(fill = NULL, colour = NULL) +
-  coord_cartesian(ylim = c(0, 0.10)) +
+  coord_cartesian(ylim = c(0, 80)) +
   boxp_legend_theme_prey
 boxplot_prey_weight
 
@@ -1116,8 +1119,8 @@ boxplot_prey_area <- ggplot(df_dis, aes(y = prey_area, fill = ant_species,
   boxp_distribution_prey +
   boxp_style_prey +
   scale_x_continuous(breaks = c(1, 2),
-                     labels = c("primary", "secondary"),
-                     name   = "Forest type") +
+                     labels = c("primary forest", "secondary forest"),
+                     name   = NULL) +
   labs(y = "Prey area [mm²]") +
   labs(fill = NULL, colour = NULL) +
   coord_cartesian(ylim = c(0, 80)) +
@@ -1131,14 +1134,138 @@ boxplot_prey_shape <- ggplot(df_dis, aes(y = prey_shape, fill = ant_species,
   boxp_distribution_prey +
   boxp_style_prey +
   scale_x_continuous(breaks = c(1, 2),
-                     labels = c("primary", "secondary"),
-                     name   = "Forest type") +
+                     labels = c("primary forest", "secondary forest"),
+                     name   = NULL) +
   labs(y = "Prey shape index") +
   labs(fill = NULL, colour = NULL) +
   coord_cartesian(ylim = c(0, 10)) +
   boxp_legend_theme_prey
 boxplot_prey_shape
 
+           ######### C. Combining Plots #######
+#Preperation 
+boxplot_prey_length_c <- boxplot_prey_length + boxp_panel +
+  theme(legend.position = "none") 
+boxplot_prey_width_c  <- boxplot_prey_width + boxp_panel +
+  theme(legend.position = "none")
+boxplot_prey_weight_c <- boxplot_prey_weight + boxp_panel 
+boxplot_prey_area_c   <- boxplot_prey_area + boxp_panel +
+  theme(legend.position = "none")
+boxplot_prey_shape_c  <- boxplot_prey_shape + boxp_panel +
+  theme(legend.position = "none")
+
+
+#backup - this workded
+boxp_prey_combined <- 
+  (boxplot_prey_length_c + boxplot_prey_width_c + boxplot_prey_weight_c) /
+  (boxplot_prey_area_c + boxplot_prey_shape_c)  + 
+  boxp_legend_theme_prey
+
+jpeg(file = "Boxplot Prey All.jpg",
+     width = 60, height = 36, units = "cm", res = 300)
+boxp_prey_combined
+dev.off()
+
+
+##### 2.2 Allometry in Prey Items #####
+
+###### 2.2.1 Prey length vs. prey weight ######
+
+                    # A. LRM - LENGTH vs. WEIGHT - PREY
+#-----------------------------------------------------------------------------#
+#base model no main effects
+prey_biomet_weight1 <-lm(log10(prey_weight*1000) ~ log10(prey_length), 
+                         data = df_dis)
+
+#model with only main effects
+prey_biomet_weight2 <- lm(log10(prey_weight*1000) ~ log10(prey_length) + 
+                            ant_species + forest_type , data = df_dis)
+
+#model with interacting effect specis an main effects 
+prey_biomet_weight3 <- lm(log10(prey_weight*1000) ~ log10(prey_length) * ant_species
+                         + forest_type , data = df_dis)
+
+summary(prey_biomet_weight3)
+confint(prey_biomet_weight3)
+AIC(prey_biomet_weight1, prey_biomet_weight2, prey_biomet_weight3)
+anova(prey_biomet_weight1, prey_biomet_weight2, prey_biomet_weight3)
+
+
+# B. Plot  WEIGHT vs. LENGTH
+#-----------------------------------------------------------------------------#
+prey_length_weight <- ggplot(df_dis, aes(x = prey_length,y = prey_weight * 1000,
+                                    colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9",
+              fill   = "grey66",
+              alpha  = 0.9  ) +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Prey length [mm]",
+        y     = "Prey weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_Prey_length_weight.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+prey_length_weight
+dev.off()
+
+
+
+
+
+###### 2.2.2 Prey length vs. prey width ######
+
+                    # A. LRM - LENGTH vs. WIDTH - PREY
+#-----------------------------------------------------------------------------#
+#base model no main effects
+prey_biomet_width1 <-lm(log10(prey_width) ~ log10(prey_length), 
+                         data = df_dis)
+
+#model with only main effects
+prey_biomet_width2 <- lm(log10(prey_width) ~ log10(prey_length) + 
+                            ant_species + forest_type , data = df_dis)
+
+#model with interacting effect specis an main effects 
+prey_biomet_width3 <- lm(log10(prey_width) ~ log10(prey_length) * ant_species
+                         + forest_type , data = df_dis)
+
+summary(prey_biomet_width3)
+confint(prey_biomet_width3)
+AIC(prey_biomet_width1, prey_biomet_width2, prey_biomet_width3)
+anova(prey_biomet_width1, prey_biomet_width2, prey_biomet_width3)
+
+
+# B. Plot  WEIGHT vs. LENGTH
+#-----------------------------------------------------------------------------#
+prey_length_width <- ggplot(df_dis, aes(x = prey_length,y = prey_width,
+                                    colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9",
+              fill   = "grey66",
+              alpha  = 0.9  ) +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Prey Length [mm]",
+        y     = "Prey weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_Prey_length_width.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+prey_length_width
+dev.off()
 
 
 
@@ -1151,58 +1278,117 @@ boxplot_prey_shape
 
 
 
-###### 2.1.x Testing against Ants #####
-#Welch t-test 
-t.test(log10(prey_length) ~ ant_species, data = df_dis)
-t.test(log10(prey_width) ~ ant_species, data = df_dis)
-t.test(log10(prey_weight*1000) ~ ant_species, data = df_dis)
-t.test(log10(prey_shape) ~ ant_species, data = df_dis)
-t.test(log10(prey_area) ~ ant_species, data = df_dis)
-
-#Effektgröße (Cohen’s d)
-cohens_d(log10(prey_length) ~ ant_species, data = df_dis)
-cohens_d(log10(prey_width) ~ ant_species, data = df_dis)
-cohens_d(log10(prey_weight*1000) ~ ant_species, data = df_dis)
-cohens_d(log10(prey_shape) ~ ant_species, data = df_dis)
-cohens_d(log10(prey_area) ~ ant_species, data = df_dis)
-
-#Plotting the results - HIER GEHT SCHON WIEDER NIX -BS wrong comand!!
-par(mfrow = c(1, 5))
-hist(df_dis$prey_length, main = "Prey length", col = "grey",
-     xlab = "length [mm]", ylim = c(0, 1000))
-hist(df_dis$prey_width,  main = "Prey width [mm]",  col = "grey",
-     xlab = "width [mm]", ylim = c(0, 1000))
-hist((1000*df_dis$prey_weight), main = "Prey weight", col = "grey",
-     xlab = "Weight [mg]", ylim = c(0, 2500))
-hist(df_dis$prey_shape, main = "Prey Shape", col = "grey",
-     xlab = "Shape (length/width) [mm]", ylim = c(0, 1000))
-hist(df_dis$prey_area,  main = "Prey Area [mm]",  col = "grey",
-     xlab = "Prey Area [mm^2]", ylim = c(0, 1000))
 
 
-#Box plot by species
-par(mfrow = c(1, 5))
-boxplot(prey_length ~ ant_species, data = df_dis,
-        main = "Prey length by ant species", ylab = "Prey length [mm]", xlab = "")
-boxplot(prey_width ~ ant_species, data = df_dis, 
-        main = "Prey width by ant species", ylab = "Prey width [mm]", xlab = "")
-boxplot((1000*prey_weight)~ ant_species, data = df_dis,
-        main = "Prey weight by species", ylab = "Prey weight [mg]", xlab = "")
-boxplot(prey_shape ~ ant_species, data = df_dis, 
-        main = "Prey shape by ant species", ylab = "Prey shape", xlab = "")
-boxplot(prey_area ~ ant_species, data = df_dis, 
-        main = "Prey area by ant species", ylab = "Prey area [mm^2]", xlab = "")
 
 
-#=============================================================================
 
 
-                      #### 3 Ant-Prey-Relationship  #### 
 
-                     ##### 3.1 Weight-Relationship  ##### 
-                  #Ant weight vs prey weight (single workers) 
+
+
+###### 2.2.3 Prey weight vs. prey width ######
+
+
+                        # A. LRM - WEIGHT vs. WIDTH
+#-----------------------------------------------------------------------------#
+#base model no main effects
+prey_biomet_ww1 <- lm(log10(prey_weight*1000) ~ log10(prey_width), data = df_dis)
+
+#model with only main effects
+prey_biomet_ww2 <- lm(log10(prey_weight*1000) ~ log10(prey_width) + ant_species
+                     + forest_type , data = df_dis)
+
+#model with interacting effect specis an main effects 
+prey_biomet_ww3 <- lm(log10(prey_weight*1000) ~ log10(prey_width) * ant_species
+                     + forest_type , data = df_dis)
+
+summary(prey_biomet_ww3)
+confint(prey_biomet_ww3)
+AIC(prey_biomet_ww1, prey_biomet_ww2, prey_biomet_ww3)
+anova(prey_biomet_ww1, prey_biomet_ww2, prey_biomet_ww3)
+
+
+                     # B. Plot  WEIGHT vs. WIDTH -Prey
+#-----------------------------------------------------------------------------#
+
+prey_width_weight <- ggplot(df_dis, aes(x = prey_width,y = prey_weight * 1000,
+                                   colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Prey width [mm]",
+        y     = "Prey weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_Prey_weight_width.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+prey_width_weight
+dev.off()
+
+###### 2.2.4 Prey weight vs. prey area ######
+
+
+                      # A. LRM - WEIGHT vs. AREA
+#-----------------------------------------------------------------------------#
+#base model no main effects
+prey_biomet_dens1 <- lm(log10(prey_weight*1000) ~ log10(prey_area), data = df_dis)
+
+#model with only main effects
+prey_biomet_dens2 <- lm(log10(prey_weight*1000) ~ log10(prey_area) + ant_species
+                      + forest_type , data = df_dis)
+
+#model with interacting effect specis an main effects 
+prey_biomet_dens3 <- lm(log10(prey_weight*1000) ~ log10(prey_area) * ant_species
+                      + forest_type , data = df_dis)
+
+summary(prey_biomet_dens3)
+confint(prey_biomet_dens3)
+AIC(prey_biomet_dens1, prey_biomet_dens2, prey_biomet_dens3)
+anova(prey_biomet_dens1, prey_biomet_dens2, prey_biomet_dens3)
+
+
+# B. Plot  WEIGHT vs. WIDTH -Prey
+#-----------------------------------------------------------------------------#
+
+prey_density <- ggplot(df_dis, aes(x = prey_area,y = prey_weight * 1000,
+                                    colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_smooth(aes(colour = NULL),   # no species-specific regression
+              method = "lm",
+              se = TRUE,
+              linewidth = 1,
+              colour = "grey9") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  lrm_style +                       #  universal lrm style defined in 1.2.1.
+  labs( x     = "Prey area [mm²]",
+        y     = "Prey weight [mg]",
+        color = "Species" )
+
+
+jpeg(filename = "LRM_Prey_weight_area.jpg", width = 20, 
+     height = 18, units = "cm", res = 300)
+prey_density
+dev.off()
+
+#==================================.===========================================
+
+                   #### 3 Ant-Prey-Relationship  #### 
+
 #=============================================================================#
-###### 3.1.1 Data preparation #####
+
+###### 3.1 Weight-Relationship  ######
+#Ant weight vs prey weight (single workers) 
+#=============================================================================#
+####### 3.1.1 Data preparation #####
 #setting species and forest as factor (aka categorical variable)
 df_single$ant_species <- factor(df_single$ant_species)
 df_single$forest_type <- factor(df_single$forest_type)
@@ -1213,7 +1399,7 @@ df_single <- df_single %>%
   mutate(across(c(ant_size, prey_shape),
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
-###### 3.1.2 Choosing the fittest Model #####
+####### 3.1.2 Choosing the fittest Model #####
 #base model without explaining variables 
 #weight relations for single carriers Nr.1
 weight_sc1 <- lm(log10(prey_weight) ~ log10(ant_weight), data = df_single) 
@@ -1243,7 +1429,7 @@ AIC(weight_sc1, weight_sc2, weight_sc3)
 anova(weight_sc2, weight_sc3)
 
 
-###### 3.1.3 Plotting: Ant weight vs prey weight (single workers)#####
+####### 3.1.3 Plotting: Ant weight vs prey weight (single workers)#####
 #This is the plot showing the weight_sc3
 #Regression line should be for both species since species has no sig. effect
 
@@ -1283,14 +1469,14 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
 
 
 
-#=============================================================================
-                     ##### 3.2 Dimensional matching  #### 
-                        #Prey size / shape vs Ant size
+#======================================.======================================
+##### 3.2 Dimensional matching  #### 
+#Prey size / shape vs Ant size
 #=============================================================================#
 
 
 #=============================================================================
-                   ##### 3.3 Loading in Single Workers  #### 
+##### 3.3 Loading in Single Workers  #### 
 #=============================================================================#
 ###### 3.3.1 Relative load vs. Ant weight (single workers) ######
 #Relaive load is defined by ant_load / ant_weight
