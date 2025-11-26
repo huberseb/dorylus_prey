@@ -1052,7 +1052,7 @@ write.table(all_var, file = "variance_tests_prey_biometrics.csv",
 
 
 
-           ######### A. Boxplot Style and Theme #######
+           #######C. Boxplot Style and Theme #######
 # numeric positioning of forest (1 = primary, 2 = secondary)
 # with ant specivic scaling 
 offset <- 0.22   # settin distance of boxes within forest 
@@ -1130,7 +1130,7 @@ boxp_legend_theme_prey <- list (theme(
       linetype = 0  )   # no border 
     )))
 
-           ######### B. Generating Boxplots #######
+           ######### D. Generating Boxplots #######
 
 # PREY LENGTH
 boxplot_prey_length <- ggplot(df_dis, aes(y = prey_length, fill = ant_species,
@@ -1204,7 +1204,7 @@ boxplot_prey_shape <- ggplot(df_dis, aes(y = prey_shape, fill = ant_species,
   boxp_legend_theme_prey
 boxplot_prey_shape
 
-           ######### C. Combining Plots #######
+           ######### E. Combining Plots #######
 #Preperation 
 boxplot_prey_length_c <- boxplot_prey_length + boxp_panel +
   theme(legend.position = "none") 
@@ -1229,8 +1229,7 @@ boxp_prey_combined
 dev.off()
 
 
-##### 2.2 Allometry in Prey Items #####
-
+##### 2.2 Allometry in Prey Items ####
 ###### 2.2.1 Prey length vs. prey weight ######
 
                     # A. LRM - LENGTH vs. WEIGHT - PREY
@@ -1460,38 +1459,154 @@ df_single <- df_single %>%
   mutate(across(c(ant_size, prey_shape),
                 ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
 
-####### 3.1.2 Choosing the fittest Model #####
+####### 3.1.2 LRM comparison  #####
 #base model without explaining variables 
 #weight relations for single carriers Nr.1
-weight_sc1 <- lm(log10(prey_weight) ~ log10(ant_weight), data = df_single) 
+weight_sc1 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000),
+                 data = df_single) 
 
-summary(weight_sc1 )
-confint(weight_sc1 ) # 95%-Convidence intervall
+#summary(weight_sc1 )
+#confint(weight_sc1 ) # 95%-Convidence intervall
 
 #model with only main effects
-weight_sc2 <- lm(log10(prey_weight) ~ log10(ant_weight) + ant_species +
-                   forest_type +  prey_shape, data = df_single)
+weight_sc2 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) + 
+                   ant_species + forest_type +  prey_shape, data = df_single)
 
-summary(weight_sc2)
-confint(weight_sc2)
-AIC(weight_sc1 , weight_sc2)  #compares models - Akaike Information Criterion
-#standard plots to check homoskedasticity, linearity, leverage
-plot(weight_sc2) 
+#summary(weight_sc2)
+#confint(weight_sc2)
+#AIC(weight_sc1 , weight_sc2)  #compares models - Akaike Information Criterion
+#plot(weight_sc2) #standard plots to check homoskedasticity, linearity, leverage
 #Breusch-Pagan-test on homoskedasticity (is Varianz in Residuals constant)
-bptest(weight_sc2) 
+#bptest(weight_sc2) 
 
 #model with interacting effect specis an main effects 
 #test this to see if slope is different when species are considered
-weight_sc3 <- lm(log10(prey_weight) ~ log10(ant_weight) * ant_species + 
+weight_sc3 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) * ant_species+ 
                    forest_type +  prey_shape, data = df_single)
 
 summary(weight_sc3)
 confint(weight_sc3)
+bptest(weight_sc3) 
 AIC(weight_sc1, weight_sc2, weight_sc3)
-anova(weight_sc2, weight_sc3)
+anova(weight_sc1, weight_sc2, weight_sc3)
 
 
-####### 3.1.3 Plotting: Ant weight vs prey weight (single workers)#####
+
+####### 3.1.3 LMM calculation #####
+#-----------------------------------------------------------------------------#
+#Creating a LMM based on LRM with only main/fixed effects 
+#This includes possible random variation due to the raids (adds random effect)
+#We do this based on the rusltus of comparison between the models above
+
+
+#The random intercept for raid identity explained 13% of the variance (ICC=0.13)
+
+weight_sc_LMM <- lmer(log10(prey_weight*1000) ~ log10(ant_weight*1000) + 
+                        ant_species + forest_type + prey_shape + (1 | raid_ID),
+                      data = df_single)
+
+summary(weight_sc_LMM)
+AIC(weight_sc1, weight_sc2, weight_sc3, weight_sc_LMM)
+
+#checking variation within Raids
+VarCorr(weight_sc_LMM)
+icc(weight_sc_LMM)
+
+                              #  DHARMa 
+#-----------------------------------------------------------------------------#
+
+sim_weight_sc_LMM <- simulateResiduals(weight_sc_LMM)  #Simulating Residuals
+
+# plot(sim_weight_sc_LMM ) #plot diagnostic
+
+# Testing Distribution & Dispersion
+testDispersion(sim_weight_sc_LMM )
+testUniformity(sim_weight_sc_LMM )
+testResiduals(sim_weight_sc_LMM )  
+
+
+
+# C. Plot for LMM 
+#-----------------------------------------------------------------------------#
+# Sequencing Ant weight to have fixed points for the predict grid
+# This is done in the original scale and later transformed from g to mg
+ant_seq_weight_sc_LMM <- seq(
+  from = min((df_single$ant_weight), na.rm = TRUE),
+  to   = max((df_single$ant_weight), na.rm = TRUE),
+  length.out = 100
+)
+
+#Prediction-Grid (for both spices, primary forest, mean prey_shape)
+#To calculate predicts and generate one line all effects net to be standardized
+newdat_weight_sc_LM <- expand.grid(
+  ant_weight   = ant_seq_weight_sc_LMM,
+  ant_species  = levels(df_single$ant_species),
+  forest_type  = "primary",
+  prey_shape   = mean(df_single$prey_shape, na.rm = TRUE)
+)
+
+#LMM-Predicts (only Fixed Effects)
+newdat_weight_sc_LM$pred_log_weight_sc_LMM <- predict(
+  weight_sc_LMM,
+  newdata = newdat_weight_sc_LM,
+  re.form = NA   # no random effects in line
+)
+
+# Gemeinsames Legendendesign für LRM + LMM Plots
+lmm_legend_theme <- list(dorylus_colour,
+  theme(
+    legend.position      = c(0.98, 0.07),   # im Panel: rechts, über x-Achse
+    legend.justification = c(1, 0),         # unten-rechte Ecke "ankern"
+    legend.direction     = "vertical",      # Einträge untereinander
+    legend.box           = "vertical",
+    legend.background    = element_rect(fill = "white", colour = NA),
+    legend.key           = element_rect(fill = NA, colour = NA),
+    legend.key.width     = unit(0.4, "cm"),
+    legend.key.height    = unit(0.15, "cm"),
+    legend.key.size      = unit(0.25, "lines"),
+    legend.text          = element_text(size = 14, face = "italic", hjust = 0),
+    legend.title         = element_blank(),
+    legend.text.align    = 0,
+    legend.box.margin    = margin(0, 0, 0, 0),
+    legend.margin        = margin(0, 0, 0, 0)),
+  guides(
+    colour = "none",  
+    fill   = guide_legend(
+      override.aes = list(
+        colour = NA,  
+        shape  = NA,  
+        alpha  = 0.7))))
+
+
+#Generating Plot with data points + LMM-Lines
+plot_weight_sc_LMM<- ggplot(df_single, aes(x = log10(ant_weight*1000),
+                                        y = log10(prey_weight *1000),
+                                        colour = ant_species)) +
+  geom_point(alpha = 0.3, size = 1) +
+  geom_line(data = newdat_weight_sc_LM,
+            aes(x = log10(ant_weight*1000),
+                y = pred_log_weight_sc_LMM,
+                colour = ant_species),
+            linewidth = 1.1) +
+  theme_classic(base_size = 13) +
+  labs(
+    x = "Ant weight [mg]",
+    y = "Prey weight [mg]",
+    colour = "Ant species",
+    title = NULL
+  )
+
+# file save
+jpeg(file = "Ant vs Prey Weight LMM_V1.jpg",
+     width = 25, height = 18, units = "cm", res = 300)
+plot_weight_sc_LMM
+dev.off()
+
+
+#=============================================================================#
+
+
+####### 3.1.5 LRM Plot - most basic (not used)#####
 #This is the plot showing the weight_sc3
 #Regression line should be for both species since species has no sig. effect
 
@@ -1506,24 +1621,19 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
   
   #add horizontel reference line   
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
-  
-  #set colour scheme 
-  scale_color_manual(values = c("#E69F00", "#56B4E9")) +
-  
-  #Add description and legend
   labs(
     x = "Ant weight (log10, mg)",
     y = "Prey weight (log10, mg)",
     color = "Dorylus"
   ) +
+  dorylus_colour +
   theme_classic(base_size = 14) +
   theme(
     legend.position = "right",
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
     axis.title = element_text(size = 14),
-    axis.text = element_text(size = 12)
-  )
+    axis.text = element_text(size = 12)) 
 
 #TO DO: Check for used model (is it the right one?)
 
@@ -1531,7 +1641,67 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
 
 
 
-#=============================================================================#
+
+
+
+
+
+
+
+
+
+
+
+####### 3.1.6 LRM Plot - for best fitting model (weight_sc3) ######
+
+# LRM model 3 prediction
+pred_weight_LRM <- predict(weight_sc3, newdata  = newdat_weight_sc_LM,
+                   interval = "confidence")
+
+newdat_weight_sc_LM$fit_log_prey <- pred_weight_LRM[, "fit"]
+newdat_weight_sc_LM$lwr_log_prey <- pred_weight_LRM[, "lwr"]
+newdat_weight_sc_LM$upr_log_prey <- pred_weight_LRM[, "upr"]
+
+plot_weight_sc_LM <- ggplot(
+  df_single, aes( x = ant_weight * 1000,   #log transformation later in code
+                  y = prey_weight * 1000, colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +    #adds data points    
+  
+  geom_line( data = newdat_weight_sc_LM,          # Regressionline (LRM Model 3)
+    aes(x = ant_weight * 1000,y = 10^fit_log_prey # zurücktransformiert in mg
+    ), linewidth = 1) +
+  
+  geom_ribbon(data = newdat_weight_sc_LM,aes(   # confidence band
+      x = ant_weight * 1000,
+      ymin = 10^lwr_log_prey,
+      ymax = 10^upr_log_prey,
+      fill = ant_species ),
+    alpha = 0.4,
+    colour = NA,
+    inherit.aes = FALSE) +
+  
+  scale_x_log10(name = "Ant weight [mg]") +
+  scale_y_log10(name = "Prey weight [mg]")+
+  labs(colour = "Dorylus", fill   = "Dorylus")+
+  lrm_style +          # defined in chapter 1
+  lmm_legend_theme     # defined under 3.1 LMM
+plot_weight_sc_LM 
+
+
+# file save
+jpeg(file = "Ant vs Prey Weight LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_weight_sc_LM
+dev.off()
+
+
+
+
+
+
+
+
+
 
 ##### 3.2 Dimensional matching  #### 
 #=============================================================================#
@@ -1542,7 +1712,6 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
 ##### 3.3 Loading in Single Workers  #### 
 #=============================================================================#
 ###### 3.3.1 Relative load vs. Ant weight (single workers) ######
-#Relaive load is defined by ant_load / ant_weight
 
                          # A. Linear Regression Models
 #-----------------------------------------------------------------------------#
@@ -1658,7 +1827,6 @@ dev.off()
 #_____________________________________________________________________________#
 
 ###### 3.3.2 Relative load vs. Ant size (single workers) ######
-
 # Relative load is defined by ant_load / ant-weight
 
                        # A. Linear Regression Models
