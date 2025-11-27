@@ -77,7 +77,7 @@ df["prey_shape"] <- df$prey_length / df$prey_width
 
 ############## Prey Area (prey length*prey width) 
 # index of how long and thin or short and fat prey items are
-df["prey_shape"] <- df$prey_length * df$prey_width
+df["prey_area"] <- df$prey_length * df$prey_width
 
 ############## Ant Size (ant length*ant width)
 # gives the total rectangular 2-dimensional area each ant occupies
@@ -1460,19 +1460,21 @@ df_single <- df_single %>%
 weight_sc1 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000),
                  data = df_single) 
 
-#summary(weight_sc1 )
-#confint(weight_sc1 ) # 95%-Convidence intervall
+summary(weight_sc1 )
+confint(weight_sc1 ) # 95%-Convidence intervall
+bptest(weight_sc1) 
 
 #model with only main effects
 weight_sc2 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) + 
                    ant_species + forest_type +  prey_shape, data = df_single)
 
-#summary(weight_sc2)
-#confint(weight_sc2)
+summary(weight_sc2)
+confint(weight_sc2)
 #AIC(weight_sc1 , weight_sc2)  #compares models - Akaike Information Criterion
 #plot(weight_sc2) #standard plots to check homoskedasticity, linearity, leverage
+
 #Breusch-Pagan-test on homoskedasticity (is Varianz in Residuals constant)
-#bptest(weight_sc2) 
+bptest(weight_sc2) 
 
 #model with interacting effect specis an main effects 
 #test this to see if slope is different when species are considered
@@ -1603,14 +1605,14 @@ dev.off()
 #This is the plot showing the weight_sc3
 #Regression line should be for both species since species has no sig. effect
 
-ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
-                      color = ant_species)) +
+plot_weight_sc_basic <- ggplot(df_single, aes(x = log10(1000*ant_weight),
+                                              y = log10(1000*prey_weight),
+                                              color = ant_species)) +
   #sets points  
   geom_point(alpha = 0.7, size = 0.7) +  
   
   #regression line, se sets confidence area 
-  geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.7) +
-  
+  geom_smooth (method = "lm", se = FALSE, linewidth = .7)+  
   
   #add horizontel reference line   
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
@@ -1628,7 +1630,11 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
     axis.title = element_text(size = 14),
     axis.text = element_text(size = 12)) 
 
-#TO DO: Check for used model (is it the right one?)
+# file save
+jpeg(file = "Ant vs Prey Weight LRM Basic.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_weight_sc_basic
+dev.off()
 
 
 
@@ -1645,10 +1651,10 @@ ggplot(df_single, aes(x = log10(1000*ant_weight), y = log10(1000*prey_weight),
 
 
 
-####### 3.1.5 LRM Plot - for best fitting model (weight_sc3) ######
+####### 3.1.5 LRM Plot - for best fitting model (weight_sc2) ######
         #------------Lrgend needs fixing in thi----------#
 # LRM model 3 prediction
-pred_weight_LRM <- predict(weight_sc3, newdata  = newdat_weight_sc_LM,
+pred_weight_LRM <- predict(weight_sc2, newdata  = newdat_weight_sc_LM,
                    interval = "confidence")
 
 newdat_weight_sc_LM$fit_log_prey <- pred_weight_LRM[, "fit"]
@@ -1670,7 +1676,7 @@ plot_weight_sc_LM <- ggplot(
   df_single, aes( x = ant_weight * 1000,   #log transformation later in code
                   y = prey_weight * 1000, colour = ant_species, 
                   fill   = ant_species)) +
-  geom_point(alpha = 0.5, size = 1.5) +    #adds data points    
+  geom_point(alpha = 0.3, size = 1.5) +    #adds data points    
   
   geom_line( data = newdat_weight_sc_LM,          # Regressionline (LRM Model 3)
     aes(x = ant_weight * 1000,y = 10^fit_log_prey # zurücktransformiert in mg
@@ -1689,11 +1695,401 @@ plot_weight_sc_LM <- ggplot(
         size     = 3.5)))
 plot_weight_sc_LM 
 
-
 # file save
-jpeg(file = "Ant vs Prey Weight LRM_2.jpg",
+jpeg(file = "Ant vs Prey Weight LRM.jpg",
      width = 20, height = 18, units = "cm", res = 300)
 plot_weight_sc_LM
+dev.off()
+
+
+
+##### 3.2 Dimensional matching  #### 
+#=============================================================================#
+###### 3.2.1 Prey area  vs. Ant area ###### 
+#=============================================================================#
+                ####### A LRM comparison – Area  #####
+df_single["prey_area"] <- df_single$prey_length * df_single$prey_width
+df_single["ant_size"] <- df_single$ant_length * df_single$ant_width
+
+# base model without explanatory variables
+area_sc1 <- lm(log10(prey_area) ~ log10(ant_size),
+               data = df_single)
+
+summary(area_sc1)
+confint(area_sc1)
+bptest(area_sc1)
+
+# model with only main effects
+area_sc2 <- lm(log10(prey_area) ~ log10(ant_size) +
+                 ant_species + forest_type + prey_shape,
+               data = df_single)
+
+summary(area_sc2)
+confint(area_sc2)
+#AIC(area_sc1, area_sc2)
+bptest(area_sc2)
+
+
+# interaction model (species × ant_size)
+area_sc3 <- lm(log10(prey_area) ~ log10(ant_size) * ant_species +
+                 forest_type + prey_shape,
+               data = df_single)
+
+summary(area_sc3)
+confint(area_sc3)
+bptest(area_sc3)
+AIC(area_sc1, area_sc2, area_sc3)
+anova(area_sc1, area_sc2, area_sc3)
+
+
+
+#=============================================================================#
+                ####### B. LMM calculation – Area #####
+
+area_sc_LMM <- lmer(log10(prey_area) ~ log10(ant_size) +
+                      ant_species + forest_type + prey_shape +
+                      (1 | raid_ID),
+                    data = df_single)
+
+summary(area_sc_LMM)
+AIC(area_sc1, area_sc2, area_sc3, area_sc_LMM)
+
+VarCorr(area_sc_LMM)
+icc(area_sc_LMM)
+
+
+# DHARMa diagnostics
+sim_area_sc_LMM <- simulateResiduals(area_sc_LMM)
+#plot(sim_area_sc_LMM)
+testDispersion(sim_area_sc_LMM)
+testUniformity(sim_area_sc_LMM)
+testResiduals(sim_area_sc_LMM)
+
+
+
+#=============================================================================#
+                ####### C. LMM Plot – Ant area vs Prey area #####
+
+# sequence for predictions
+ant_seq_area_sc_LMM <- seq(
+  from = min(df_single$ant_size, na.rm = TRUE),
+  to   = max(df_single$ant_size, na.rm = TRUE),
+  length.out = 100
+)
+
+# prediction grid
+newdat_area_sc_LM <- expand.grid(
+  ant_size    = ant_seq_area_sc_LMM,
+  ant_species = levels(df_single$ant_species),
+  forest_type = "primary",
+  prey_shape  = mean(df_single$prey_shape, na.rm = TRUE)
+)
+
+# fixed-effect predictions
+newdat_area_sc_LM$pred_log_area_sc_LMM <- predict(
+  area_sc_LMM,
+  newdata = newdat_area_sc_LM,
+  re.form = NA
+)
+
+plot_area_sc_LMM <- ggplot(
+  df_single,
+  aes(x = ant_size,
+      y = prey_area,
+      colour = ant_species)
+) +
+  geom_point(alpha = 0.7, size = 0.7) +
+  geom_line(
+    data = newdat_area_sc_LM,
+    aes(
+      x = ant_size,
+      y = 10^pred_log_area_sc_LMM,
+      colour = ant_species
+    ),
+    linewidth = 1
+  ) +
+  scale_x_log10(name = "Ant area [mm²]") +
+  scale_y_log10(name = "Prey area [mm²]") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_area_sc_LMM
+
+jpeg(file = "Ant vs Prey Area LMM.jpg",
+     width = 25, height = 18, units = "cm", res = 300)
+plot_area_sc_LMM
+dev.off()
+
+
+
+#=============================================================================#
+                ####### D. LRM Plot – best fitting model (area_sc3) #####
+
+area_sc1 <- lm(log10(prey_area) ~ log10(ant_size), data = df_single)
+
+plot_area_basic_lm <- ggplot(df_single, aes(log10(ant_size), log10(prey_area))) +
+  
+  geom_point(alpha = .7, size = .7) +
+  geom_smooth (method = "lm", se = FALSE, linewidth = 1, color = ant_species)+
+  clean_theme +
+  labs( x = "Ant area ",
+    y = "Prey area)",
+    color = "Dorylus") +
+  lrm_legend_theme+
+  lrm_style
+  
+plot_area_basic_lm
+
+
+
+pred_area_LRM <- predict(
+  area_sc3,
+  newdata  = newdat_area_sc_LM,
+  interval = "confidence"
+)
+
+newdat_area_sc_LM$fit_log_prey_area <- pred_area_LRM[, "fit"]
+newdat_area_sc_LM$lwr_log_prey_area <- pred_area_LRM[, "lwr"]
+newdat_area_sc_LM$upr_log_prey_area <- pred_area_LRM[, "upr"]
+
+plot_area_sc_LM <- ggplot(
+  df_single,
+  aes(
+    x = ant_size,
+    y = prey_area,
+    colour = ant_species
+  )
+) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_line(
+    data = newdat_area_sc_LM,
+    aes(
+      x = ant_size,
+      y = 10^fit_log_prey_area
+    ),
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = newdat_area_sc_LM,
+    aes(
+      x = ant_size,
+      ymin = 10^lwr_log_prey_area,
+      ymax = 10^upr_log_prey_area,
+      fill = ant_species
+    ),
+    alpha = 0.4,
+    colour = NA,
+    inherit.aes = FALSE
+  ) +
+  scale_x_log10(name = "Ant area [mm²]") +
+  scale_y_log10(name = "Prey area [mm²]") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_area_sc_LM
+
+jpeg(file = "Ant vs Prey Area LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_area_sc_LM
+dev.off()
+
+
+
+
+###### 3.2.2 Prey shape vs. Ant area ###### 
+                ####### A LRM comparison – Shape  #####
+
+# base model without explanatory variables
+shape_sc1 <- lm(log10(prey_area) ~ log10(ant_size),
+                data = df_single)
+
+summary(shape_sc1)
+confint(shape_sc1)
+bptest(shape_sc1)
+
+# model with only main effects
+shape_sc2 <- lm(log10(prey_area) ~ log10(ant_size) +
+                  ant_species + forest_type + prey_shape,
+                data = df_single)
+
+summary(shape_sc2)
+confint(shape_sc2)
+bptest(shape_sc2)
+
+
+# interaction model (species × ant_size)
+shape_sc3 <- lm(log10(prey_area) ~ log10(ant_size) * ant_species +
+                  forest_type + prey_shape,
+                data = df_single)
+
+summary(shape_sc3)
+confint(shape_sc3)
+bptest(shape_sc3)
+AIC(shape_sc1, shape_sc2, shape_sc3)
+anova(shape_sc1, shape_sc2, shape_sc3)
+
+
+
+#=============================================================================#
+                ####### B. LMM calculation – Shape #####
+
+shape_sc_LMM <- lmer(log10(prey_area) ~ log10(ant_size) +
+                       ant_species + forest_type + prey_shape +
+                       (1 | raid_ID),
+                     data = df_single)
+
+summary(shape_sc_LMM)
+AIC(shape_sc1, shape_sc2, shape_sc3, shape_sc_LMM)
+
+VarCorr(shape_sc_LMM)
+icc(shape_sc_LMM)
+
+
+# DHARMa diagnostics
+sim_shape_sc_LMM <- simulateResiduals(shape_sc_LMM)
+testDispersion(sim_shape_sc_LMM)
+testUniformity(sim_shape_sc_LMM)
+testResiduals(sim_shape_sc_LMM)
+
+
+
+#=============================================================================#
+                ####### C. LMM Plot – Ant shape vs Prey shape #####
+
+# sequence for predictions
+ant_seq_shape_sc_LMM <- seq(
+  from = min(df_single$ant_size, na.rm = TRUE),
+  to   = max(df_single$ant_size, na.rm = TRUE),
+  length.out = 100
+)
+
+# prediction grid
+newdat_shape_sc_LM <- expand.grid(
+  ant_size    = ant_seq_shape_sc_LMM,
+  ant_species = levels(df_single$ant_species),
+  forest_type = "primary",
+  prey_shape  = mean(df_single$prey_shape, na.rm = TRUE)
+)
+
+# fixed-effect predictions
+newdat_shape_sc_LM$pred_log_shape_sc_LMM <- predict(
+  shape_sc_LMM,
+  newdata = newdat_shape_sc_LM,
+  re.form = NA
+)
+
+plot_shape_sc_LMM <- ggplot(
+  df_single,
+  aes(x = ant_size,
+      y = prey_area,
+      colour = ant_species)
+) +
+  geom_point(alpha = 0.7, size = 0.7) +
+  geom_line(
+    data = newdat_shape_sc_LM,
+    aes(
+      x = ant_size,
+      y = 10^pred_log_shape_sc_LMM,
+      colour = ant_species
+    ),
+    linewidth = 1
+  ) +
+  scale_x_log10(name = "Ant shape [mm²]") +
+  scale_y_log10(name = "Prey shape [mm²]") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_shape_sc_LMM
+
+jpeg(file = "Ant vs Prey Shape LMM.jpg",
+     width = 25, height = 18, units = "cm", res = 300)
+plot_shape_sc_LMM
+dev.off()
+
+
+
+#=============================================================================#
+                ####### D. LRM Plot – best fitting model (shape_sc3) #####
+
+shape_sc1 <- lm(log10(prey_area) ~ log10(ant_size), data = df_single)
+
+plot_shape_basic_lm <- ggplot(df_single, aes(log10(ant_size), log10(prey_area), 
+                                             color = ant_species)) +
+  
+  geom_point(alpha = .7, size = .7) +
+  geom_smooth(aes(colour = ant_species), method = "lm", se = FALSE, 
+              linewidth = 1) +
+  clean_theme +
+  labs(x = "Ant shape",
+       y = "Prey shape",
+       color = "Dorylus") +
+  lrm_legend_theme +
+  lrm_style
+
+plot_shape_basic_lm
+
+jpeg(file = "Ant vs Prey Shape LRM Basic.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_shape_sc_LM
+dev.off()
+
+
+
+
+
+pred_shape_LRM <- predict(
+  shape_sc3,
+  newdata  = newdat_shape_sc_LM,
+  interval = "confidence"
+)
+
+newdat_shape_sc_LM$fit_log_prey_shape <- pred_shape_LRM[, "fit"]
+newdat_shape_sc_LM$lwr_log_prey_shape <- pred_shape_LRM[, "lwr"]
+newdat_shape_sc_LM$upr_log_prey_shape <- pred_shape_LRM[, "upr"]
+
+plot_shape_sc_LM <- ggplot(
+  df_single,
+  aes(
+    x = ant_size,
+    y = prey_area,
+    colour = ant_species
+  )
+) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_line(
+    data = newdat_shape_sc_LM,
+    aes(
+      x = ant_size,
+      y = 10^fit_log_prey_shape
+    ),
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = newdat_shape_sc_LM,
+    aes(
+      x = ant_size,
+      ymin = 10^lwr_log_prey_shape,
+      ymax = 10^upr_log_prey_shape,
+      fill = ant_species
+    ),
+    alpha = 0.4,
+    colour = NA,
+    inherit.aes = FALSE
+  ) +
+  scale_x_log10(name = "Ant shape [mm²]") +
+  scale_y_log10(name = "Prey shape [mm²]") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_shape_sc_LM
+
+jpeg(file = "Ant vs Prey Shape LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_shape_sc_LM
 dev.off()
 
 
@@ -1705,17 +2101,14 @@ dev.off()
 
 
 
-##### 3.2 Dimensional matching  #### 
-#=============================================================================#
-###### 3.2.1 Prey area  vs. Ant area ###### 
-###### 3.2.2 Prey shape vs. Ant area ###### 
+
 
 #=============================================================================#
 ##### 3.3 Loading in Single Workers  #### 
 #=============================================================================#
 ###### 3.3.1 Relative load vs. Ant weight (single workers) ######
 
-                         # A. Linear Regression Models
+                ####### A. Linear Regression Models ####
 #-----------------------------------------------------------------------------#
 #base model no main effects
 rel_load1w <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
@@ -1723,6 +2116,7 @@ rel_load1w <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single)
 summary(rel_load1w)
 confint(rel_load1w) # 95%-Convidence intervall
 #plot(rel_load1w) 
+bptest(rel_load1w)
 
 #model with only main effects
 rel_load2w <- lm(log10(relativ_loading) ~ log10(ant_weight) + ant_species +
@@ -1731,6 +2125,7 @@ rel_load2w <- lm(log10(relativ_loading) ~ log10(ant_weight) + ant_species +
 summary(rel_load2w)
 confint(rel_load2w)
 #plot(rel_load2w)
+bptest(rel_load2w)
 
 #model with interacting effect specis an main effects 
 rel_load3w <- lm(log10(relativ_loading) ~ log10(ant_weight) * ant_species + 
@@ -1738,11 +2133,12 @@ rel_load3w <- lm(log10(relativ_loading) ~ log10(ant_weight) * ant_species +
 
 summary(rel_load3w)
 confint(rel_load3w)
+bptest(rel_load3w)
 AIC(rel_load1w, rel_load2w, rel_load3w)
 anova(rel_load1w, rel_load2w, rel_load3w)
 #plot(rel_load3w)
 
-                          # B. Linear Mixed Models
+                ###### B. Linear Mixed Models #####
 #-----------------------------------------------------------------------------#
 #Creating a LMM based on LRM with only main/fixed effects 
 #This includes possible random variation due to the raids (adds random effect)
@@ -1775,7 +2171,7 @@ testResiduals(sim_rel_load_LMMw )
 
 
 
-                              # C. Plot for LMM 
+                ####### C. Plot for LMM ####
 #-----------------------------------------------------------------------------#
 # Sequencing Ant weight to have fixed points for the predict grid
 ant_seq_rel_loadw <- seq(
@@ -1820,10 +2216,98 @@ plot_rel_weight<- ggplot(df_single, aes(x = log10(ant_weight),
   )
 
 # file save
-jpeg(file = "Relative Load vs. Ant Weight.jpg",
+jpeg(file = "Relative Load vs. Ant Weight LMM.jpg",
      width = 25, height = 18, units = "cm", res = 300)
 plot_rel_weight
 dev.off()
+
+                ####### D. Plot for LRM`s ####
+#-----------------------------------------------------------------------------#
+rel_load1 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single)
+
+# --- Basisplot ---
+plot_rel_load_basic_lm <- ggplot(
+  df_single,
+  aes(log10(ant_weight), log10(relativ_loading), colour = ant_species)
+) +
+  geom_point(alpha = .7, size = .7) +
+  geom_smooth(aes(colour = ant_species), method = "lm", se = FALSE,
+              linewidth = 1) +
+  clean_theme +
+  labs(
+    x = "Ant weight",
+    y = "Relative loading",
+    colour = "Dorylus"
+  ) +
+  lrm_legend_theme +
+  lrm_style
+
+plot_rel_load_basic_lm
+
+jpeg(file = "Relative Load vs. Ant Weight LRM Basic.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_basic_lm
+dev.off()
+
+
+#  Vorhersagen (for model 2 - fittest ) 
+pred_rel_load_LRM <- predict(
+  rel_load2w,
+  newdata = newdat_rel_loadw,
+  interval = "confidence"
+)
+
+newdat_rel_loadw$fit_log_rel_load <- pred_rel_load_LRM[, "fit"]
+newdat_rel_loadw$lwr_log_rel_load <- pred_rel_load_LRM[, "lwr"]
+newdat_rel_loadw$upr_log_rel_load <- pred_rel_load_LRM[, "upr"]
+
+
+# --- Plot mit Regressionslinien + Bändern ---
+plot_rel_load_LM <- ggplot(
+  df_single,
+  aes(
+    x = ant_weight,
+    y = relativ_loading,
+    colour = ant_species
+  )
+) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_line(
+    data = newdat_rel_loadw,
+    aes(
+      x = ant_weight,
+      y = 10^fit_log_rel_load,
+      colour = ant_species
+    ),
+    linewidth = 1,
+    inherit.aes = FALSE
+  ) +
+  geom_ribbon(
+    data = newdat_rel_loadw,
+    aes(
+      x = ant_weight,
+      ymin = 10^lwr_log_rel_load,
+      ymax = 10^upr_log_rel_load,
+      fill = ant_species
+    ),
+    alpha = 0.4,
+    colour = NA,
+    inherit.aes = FALSE
+  ) +
+  scale_x_log10(name = "Ant weight") +
+  scale_y_log10(name = "Relative loading") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_rel_load_LM
+
+jpeg(file = "Relative Load vs. Ant Weight LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_LM
+dev.off()
+
+
 
 
 #_____________________________________________________________________________#
@@ -1831,13 +2315,14 @@ dev.off()
 ###### 3.3.2 Relative load vs. Ant size (single workers) ######
 # Relative load is defined by ant_load / ant-weight
 
-                       # A. Linear Regression Models
+                ####### A. Linear Regression Models ####
 #-----------------------------------------------------------------------------#
 # base model, no main effects
 rel_load1s <- lm(log10(relativ_loading) ~ log10(ant_size), data = df_single) 
 
 summary(rel_load1s)
 confint(rel_load1s)
+bptest(rel_load1s)
 
 # model with only main effects
 rel_load2s <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species +
@@ -1845,6 +2330,7 @@ rel_load2s <- lm(log10(relativ_loading) ~ log10(ant_size) + ant_species +
 
 summary(rel_load2s)
 confint(rel_load2s)
+bptest(rel_load2s)
 
 # model with interaction species × ant_size
 rel_load3s <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species + 
@@ -1852,11 +2338,12 @@ rel_load3s <- lm(log10(relativ_loading) ~ log10(ant_size) * ant_species +
 
 summary(rel_load3s)
 confint(rel_load3s)
+bptest(rel_load3s)
 AIC(rel_load1s, rel_load2s, rel_load3s)
 anova(rel_load1s, rel_load2s, rel_load3s)
 
 
-                          # B. Linear Mixed Model
+                    ###### B. Linear Mixed Model ####
 #-----------------------------------------------------------------------------#
 # LMM based on best LRM structure, including raid-level random intercept
 
@@ -1872,7 +2359,7 @@ VarCorr(rel_load_LMMs)
 icc(rel_load_LMMs)
 
 
-                                # C. DHARMa 
+                            # DHARMa 
 #-----------------------------------------------------------------------------#
 
 sim_rel_load_LMMs <- simulateResiduals(rel_load_LMMs)
@@ -1884,7 +2371,7 @@ testUniformity(sim_rel_load_LMMs)
 testResiduals(sim_rel_load_LMMs)
 
 
-                              # D. Plot for LMM 
+                        ###### D. Plot for LMM #####
 #-----------------------------------------------------------------------------#
 # 1) Create ant_size sequence for prediction grid
 ant_seq_rel_loads <- seq(
@@ -1931,6 +2418,97 @@ jpeg(file = "Relative Load vs. Ant Size.jpg",
      width = 25, height = 18, units = "cm", res = 300)
 plot_rel_size
 dev.off()
+
+
+
+####### D. Plot for LRM`s ####
+#-----------------------------------------------------------------------------#
+rel_load1s <- lm(log10(relativ_loading) ~ log10(ant_size), data = df_single)
+
+# --- Basisplot ---
+plot_rel_load_basic_lm <- ggplot(
+  df_single,
+  aes(log10(ant_size), log10(relativ_loading), colour = ant_species)
+) +
+  geom_point(alpha = .7, size = .7) +
+  geom_smooth(aes(colour = ant_species), method = "lm", se = FALSE,
+              linewidth = 1) +
+  clean_theme +
+  labs(
+    x = "Ant size",
+    y = "Relative loading",
+    colour = "Dorylus"
+  ) +
+  lrm_legend_theme +
+  lrm_style
+
+plot_rel_load_basic_lm
+
+jpeg(file = "Relative Load vs. Ant Size LRM Basic.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_basic_lm
+dev.off()
+
+
+#  Vorhersagen (for model 2 - fittest) 
+pred_rel_load_LRM <- predict(
+  rel_load2s,
+  newdata = newdat_rel_loads,
+  interval = "confidence"
+)
+
+newdat_rel_loads$fit_log_rel_load <- pred_rel_load_LRM[, "fit"]
+newdat_rel_loads$lwr_log_rel_load <- pred_rel_load_LRM[, "lwr"]
+newdat_rel_loads$upr_log_rel_load <- pred_rel_load_LRM[, "upr"]
+
+
+# --- Plot mit Regressionslinien + Bändern ---
+plot_rel_load_LM <- ggplot(
+  df_single,
+  aes(
+    x = ant_size,
+    y = relativ_loading,
+    colour = ant_species
+  )
+) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_line(
+    data = newdat_rel_loads,
+    aes(
+      x = ant_size,
+      y = 10^fit_log_rel_load,
+      colour = ant_species
+    ),
+    linewidth = 1,
+    inherit.aes = FALSE
+  ) +
+  geom_ribbon(
+    data = newdat_rel_loads,
+    aes(
+      x = ant_size,
+      ymin = 10^lwr_log_rel_load,
+      ymax = 10^upr_log_rel_load,
+      fill = ant_species
+    ),
+    alpha = 0.4,
+    colour = NA,
+    inherit.aes = FALSE
+  ) +
+  scale_x_log10(name = "Ant size") +
+  scale_y_log10(name = "Relative loading") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lmm_legend_theme
+
+plot_rel_load_LM
+
+jpeg(file = "Relative Load vs. Ant Size LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_LM
+dev.off()
+
+#_____________________________________________________________________________#
+
 
 #=============================================================================
                 
