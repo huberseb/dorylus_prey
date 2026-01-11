@@ -13,14 +13,15 @@ library(patchwork)   #ombining plots              # # # # # # # # # # # # # # #
 library(cowplot) 
 library(gghalves)    #violin plots in boxplots
 library(ggforce)
-library(kSamples)    #KS and DA Test 
-library(diptest)  
-library(multimode)   #Silverman´s test 
-library(ggbeeswarm)  #density bases point clouds
-library(car)         #Varianz test
+library(kSamples)    #KS and DA Test (cite)
+library(diptest)      #Dip test (cite)
+library(multimode)   #Silverman´s test (cite)
+library(ggbeeswarm)  #density bases point clouds -not necce
+library(car)         #Varianz test 
 library(flextable)   #Tabel tool
 library(officer)     # creates .docx files
-
+library(lmtest)      # BP test (cite)
+library(sandwich)    # HC3 p values (cite)
 
 #reading in data
 df <- read.delim(
@@ -187,35 +188,41 @@ dip_wei_wil; dip_wei_sjo
 
 # D. wilverthi – length
 silv_len_wil_k1 <- modetest(len_wil, mod0 = 1, method = "SI", B = 999)  
-silv_len_wil_k2 <- modetest(len_wil, mod0 = 2, method = "SI", B = 999)  
+silv_len_wil_k2 <- modetest(len_wil, mod0 = 2, method = "SI", B = 999)
+silv_len_wil_k3 <- modetest(len_wil, mod0 = 3, method = "SI", B = 999)
 
 # D. sjostedti – length
 silv_len_sjo_k1 <- modetest(len_sjo, mod0 = 1, method = "SI", B = 999)
 silv_len_sjo_k2 <- modetest(len_sjo, mod0 = 2, method = "SI", B = 999)
+silv_len_sjo_k3 <- modetest(len_sjo, mod0 = 3, method = "SI", B = 999)
 
 # D. wilverthi – width
 silv_wid_wil_k1 <- modetest(wid_wil, mod0 = 1, method = "SI", B = 999)
 silv_wid_wil_k2 <- modetest(wid_wil, mod0 = 2, method = "SI", B = 999)
+silv_wid_wil_k3 <- modetest(wid_wil, mod0 = 3, method = "SI", B = 999)
 
 # D. sjostedti – width
 silv_wid_sjo_k1 <- modetest(wid_sjo, mod0 = 1, method = "SI", B = 999)
 silv_wid_sjo_k2 <- modetest(wid_sjo, mod0 = 2, method = "SI", B = 999)
+silv_wid_sjo_k3 <- modetest(wid_sjo, mod0 = 3, method = "SI", B = 999)
 
 # D. wilverthi – weight (mg)
 silv_wei_wil_k1 <- modetest(wei_wil, mod0 = 1, method = "SI", B = 999)
 silv_wei_wil_k2 <- modetest(wei_wil, mod0 = 2, method = "SI", B = 999)
+silv_wei_wil_k3 <- modetest(wei_wil, mod0 = 3, method = "SI", B = 999)
 
 # D. sjostedti – weight (mg)
 silv_wei_sjo_k1 <- modetest(wei_sjo, mod0 = 1, method = "SI", B = 999)
 silv_wei_sjo_k2 <- modetest(wei_sjo, mod0 = 2, method = "SI", B = 999)
+silv_wei_sjo_k3 <- modetest(wei_sjo, mod0 = 3, method = "SI", B = 999)
 
 # Results
-silv_len_wil_k1; silv_len_wil_k2 
-silv_len_sjo_k1; silv_len_sjo_k2
-silv_wid_wil_k1; silv_wid_wil_k2
-silv_wid_sjo_k1; silv_wid_sjo_k2
-silv_wei_wil_k1; silv_wei_wil_k2
-silv_wei_sjo_k1; silv_wei_sjo_k2
+silv_len_wil_k1; silv_len_wil_k2; silv_len_wil_k3
+silv_len_sjo_k1; silv_len_sjo_k2; silv_len_sjo_k3
+silv_wid_wil_k1; silv_wid_wil_k2; silv_wid_wil_k3
+silv_wid_sjo_k1; silv_wid_sjo_k2; silv_wid_sjo_k3
+silv_wei_wil_k1; silv_wei_wil_k2; silv_wei_wil_k3
+silv_wei_sjo_k1; silv_wei_sjo_k2; silv_wei_sjo_k3
 
 
 
@@ -285,7 +292,7 @@ plot_ant_width <- ggplot(df, aes(x = ant_width,
     bins     = 30) +
   plot_style +  
   labs(
-    x = "Ant body width [mm]",
+    x = "Ant head width [mm]",
     y = "Proportion per species",
     fill = "Dorylus species",
   )
@@ -626,6 +633,8 @@ ant_biomet_width1 <- lm(log10(ant_width) ~ log10(ant_length), data = df)
 
 summary(ant_biomet_width1)
 confint(ant_biomet_width1)
+bptest(ant_biomet_width1) 
+coeftest(ant_biomet_width1, vcov = vcovHC(ant_biomet_width1, type = "HC3"))
 
 #model with only main effects
 ant_biomet_width2 <- lm(log10(ant_width) ~ log10(ant_length) + ant_species
@@ -633,6 +642,9 @@ ant_biomet_width2 <- lm(log10(ant_width) ~ log10(ant_length) + ant_species
 
 summary(ant_biomet_width2)
 confint(ant_biomet_width2)
+bptest(ant_biomet_width2) 
+coeftest(ant_biomet_width2, vcov = vcovHC(ant_biomet_width2, type = "HC3"))
+
 
 #model with interacting effect specis an main effects 
 ant_biomet_width3 <- lm(log10(ant_width) ~ log10(ant_length) * ant_species
@@ -640,10 +652,18 @@ ant_biomet_width3 <- lm(log10(ant_width) ~ log10(ant_length) * ant_species
 
 summary(ant_biomet_width3)
 confint(ant_biomet_width3)
-#plot(rel_load2w) #<-not used
+bptest(ant_biomet_width3) 
+coeftest(ant_biomet_width3, vcov = vcovHC(ant_biomet_width3, type = "HC3"))
+
+
 AIC(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 anova(ant_biomet_width1, ant_biomet_width2, ant_biomet_width3)
 
+jpeg(file = "Residualplots Ant length vs. width.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+par(mfrow = c(2, 2))
+plot(ant_biomet_width3)
+dev.off()
 
                          # B. Plot - WIDTH vs. LENGTH 
 #-----------------------------------------------------------------------------#
@@ -891,6 +911,15 @@ jpeg(filename = "LRM_Panel.jpg", width = 60,
 lrm_ants
 dev.off()
 
+#Plot used in Master thesis
+Bimetric_ant_resutls_ma <- All_biomet_plot/
+  ((ant_length_width_c | plot_spacer()) + plot_layout(widths = c(1, 2)) +
+     theme(plot.margin = margin(t = 50))) 
+
+jpeg(file = "Biometrics Ants_MA.jpg",
+     width = 60, height = 60, units = "cm", res = 300)
+Bimetric_ant_resutls_ma
+dev.off()
 
 
 
@@ -915,6 +944,11 @@ df_dis <- df_dis %>%
   filter(dismembered %in% c("yes", "no"))
 
 table(df_dis$dismembered)
+
+#carrier factor
+df_dis <- df_dis %>%
+  mutate(carrier_type = if_else(ant_number > 1, "multiple", "single"))
+
 
 # Make sure its a factor
 df_dis$dismembered <- factor(df_dis$dismembered, levels = c("no", "yes"))
@@ -1223,6 +1257,14 @@ jpeg(file = "Boxplot Prey All.jpg",
 boxp_prey_combined
 dev.off()
 
+boxp_prey_combined2 <- 
+  (boxplot_prey_length_c + boxplot_prey_width_c + boxplot_prey_weight_c) +
+  boxp_legend_theme_prey
+
+jpeg(file = "Boxplot Prey All_MA.jpg",
+     width = 60, height = 20, units = "cm", res = 300)
+boxp_prey_combined2
+dev.off()
 
 ##### 2.2 Allometry in Prey Items ####
 ###### 2.2.1 Prey length vs. prey weight ######
@@ -1463,6 +1505,8 @@ weight_sc1 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000),
 summary(weight_sc1 )
 confint(weight_sc1 ) # 95%-Convidence intervall
 bptest(weight_sc1) 
+coeftest(weight_sc1, vcov = vcovHC(weight_sc1, type = "HC3"))
+
 
 #model with only main effects
 weight_sc2 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) + 
@@ -1470,11 +1514,14 @@ weight_sc2 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) +
 
 summary(weight_sc2)
 confint(weight_sc2)
+
 #AIC(weight_sc1 , weight_sc2)  #compares models - Akaike Information Criterion
 #plot(weight_sc2) #standard plots to check homoskedasticity, linearity, leverage
 
 #Breusch-Pagan-test on homoskedasticity (is Varianz in Residuals constant)
 bptest(weight_sc2) 
+coeftest(weight_sc2, vcov = vcovHC(weight_sc2, type = "HC3"))
+
 
 #model with interacting effect specis an main effects 
 #test this to see if slope is different when species are considered
@@ -1484,6 +1531,8 @@ weight_sc3 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) * ant_species+
 summary(weight_sc3)
 confint(weight_sc3)
 bptest(weight_sc3) 
+coeftest(weight_sc3, vcov = vcovHC(weight_sc3, type = "HC3"))
+
 AIC(weight_sc1, weight_sc2, weight_sc3)
 anova(weight_sc1, weight_sc2, weight_sc3)
 
@@ -1601,9 +1650,7 @@ dev.off()
 #=============================================================================#
 
 
-####### 3.1.4 LRM Plot - most basic (not used)#####
-#This is the plot showing the weight_sc3
-#Regression line should be for both species since species has no sig. effect
+####### 3.1.4 LRM Plot - most basic #####
 
 plot_weight_sc_basic <- ggplot(df_single, aes(x = log10(1000*ant_weight),
                                               y = log10(1000*prey_weight),
@@ -1612,7 +1659,7 @@ plot_weight_sc_basic <- ggplot(df_single, aes(x = log10(1000*ant_weight),
   geom_point(alpha = 0.7, size = 0.7) +  
   
   #regression line, se sets confidence area 
-  geom_smooth (method = "lm", se = FALSE, linewidth = .7)+  
+  geom_smooth (method = "lm", se = TRUE, linewidth = .7)+  
   
   #add horizontel reference line   
   geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
@@ -1678,7 +1725,7 @@ plot_weight_sc_LM <- ggplot(
                   fill   = ant_species)) +
   geom_point(alpha = 0.3, size = 1.5) +    #adds data points    
   
-  geom_line( data = newdat_weight_sc_LM,          # Regressionline (LRM Model 3)
+  geom_line( data = newdat_weight_sc_LM,          # Regressionline (LRM Model 2)
     aes(x = ant_weight * 1000,y = 10^fit_log_prey # zurücktransformiert in mg
     ), linewidth = 1) +
   
@@ -1701,7 +1748,11 @@ jpeg(file = "Ant vs Prey Weight LRM.jpg",
 plot_weight_sc_LM
 dev.off()
 
-
+jpeg(file = "Residualplots Ant vs Prey Weight.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+par(mfrow = c(2, 2))
+plot(weight_sc2)
+dev.off()
 
 ##### 3.2 Dimensional matching  #### 
 #=============================================================================#
@@ -2111,34 +2162,39 @@ dev.off()
                 ####### A. Linear Regression Models ####
 #-----------------------------------------------------------------------------#
 #base model no main effects
-rel_load1w <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single) 
+rel_load1w <- lm(log10(relativ_loading) ~ log10(1000*ant_weight),
+                 data = df_single) 
 
 summary(rel_load1w)
 confint(rel_load1w) # 95%-Convidence intervall
 #plot(rel_load1w) 
 bptest(rel_load1w)
+coeftest(rel_load1w, vcov = vcovHC(rel_load1w, type = "HC3"))
 
 #model with only main effects
-rel_load2w <- lm(log10(relativ_loading) ~ log10(ant_weight) + ant_species +
+rel_load2w <- lm(log10(relativ_loading) ~ log10(1000*ant_weight) + ant_species+
                    forest_type +  prey_shape, data = df_single)
 
 summary(rel_load2w)
 confint(rel_load2w)
 #plot(rel_load2w)
 bptest(rel_load2w)
+coeftest(rel_load2w, vcov = vcovHC(rel_load2w, type = "HC3"))
 
 #model with interacting effect specis an main effects 
-rel_load3w <- lm(log10(relativ_loading) ~ log10(ant_weight) * ant_species + 
+rel_load3w <- lm(log10(relativ_loading) ~ log10(1000*ant_weight) * ant_species+ 
                    forest_type + prey_shape, data = df_single)
+
 
 summary(rel_load3w)
 confint(rel_load3w)
 bptest(rel_load3w)
+coeftest(rel_load3w, vcov = vcovHC(rel_load3w, type = "HC3"))
 AIC(rel_load1w, rel_load2w, rel_load3w)
 anova(rel_load1w, rel_load2w, rel_load3w)
 #plot(rel_load3w)
 
-                ###### B. Linear Mixed Models #####
+                ####### B. Linear Mixed Models(not used-probab. need fix)#####
 #-----------------------------------------------------------------------------#
 #Creating a LMM based on LRM with only main/fixed effects 
 #This includes possible random variation due to the raids (adds random effect)
@@ -2223,22 +2279,19 @@ dev.off()
 
                 ####### D. Plot for LRM`s ####
 #-----------------------------------------------------------------------------#
-rel_load1 <- lm(log10(relativ_loading) ~ log10(ant_weight), data = df_single)
+rel_load1 <- lm(log10(relativ_loading) ~ log10(1000*ant_weight), 
+                data = df_single)
 
 # --- Basisplot ---
-plot_rel_load_basic_lm <- ggplot(
-  df_single,
-  aes(log10(ant_weight), log10(relativ_loading), colour = ant_species)
-) +
+plot_rel_load_basic_lm <- ggplot(df_single,
+  aes(log10(1000*ant_weight), log10(relativ_loading), colour = ant_species)) +
   geom_point(alpha = .7, size = .7) +
   geom_smooth(aes(colour = ant_species), method = "lm", se = FALSE,
               linewidth = 1) +
   clean_theme +
-  labs(
-    x = "Ant weight",
-    y = "Relative loading",
-    colour = "Dorylus"
-  ) +
+  labs(x = "Ant weight",
+       y = "Relative loading",
+       colour = "Dorylus") +
   lrm_legend_theme +
   lrm_style
 
@@ -2263,51 +2316,41 @@ newdat_rel_loadw$upr_log_rel_load <- pred_rel_load_LRM[, "upr"]
 
 
 # --- Plot mit Regressionslinien + Bändern ---
-plot_rel_load_LM <- ggplot(
-  df_single,
-  aes(
-    x = ant_weight,
-    y = relativ_loading,
-    colour = ant_species
-  )
-) +
+plot_rel_load_weightLM <- ggplot( df_single, aes( x = ant_weight,
+                                                  y = relativ_loading,
+                                                  colour = ant_species)) +
   geom_point(alpha = 0.5, size = 1.5) +
-  geom_line(
-    data = newdat_rel_loadw,
-    aes(
-      x = ant_weight,
-      y = 10^fit_log_rel_load,
-      colour = ant_species
-    ),
-    linewidth = 1,
-    inherit.aes = FALSE
-  ) +
-  geom_ribbon(
-    data = newdat_rel_loadw,
-    aes(
+  geom_line(data = newdat_rel_loadw, aes(x = ant_weight,
+                                         y = 10^fit_log_rel_load,
+                                         colour = ant_species),
+            linewidth = 1,
+            inherit.aes = FALSE) +
+  geom_ribbon(data = newdat_rel_loadw, aes(
       x = ant_weight,
       ymin = 10^lwr_log_rel_load,
       ymax = 10^upr_log_rel_load,
-      fill = ant_species
-    ),
+      fill = ant_species),
     alpha = 0.4,
     colour = NA,
-    inherit.aes = FALSE
-  ) +
+    inherit.aes = FALSE) +
   scale_x_log10(name = "Ant weight") +
   scale_y_log10(name = "Relative loading") +
   labs(colour = "Dorylus", fill = "Dorylus") +
   lrm_style +
   lmm_legend_theme
 
-plot_rel_load_LM
+plot_rel_load_weightLM
 
 jpeg(file = "Relative Load vs. Ant Weight LRM.jpg",
      width = 20, height = 18, units = "cm", res = 300)
-plot_rel_load_LM
+plot_rel_load_weightLM
 dev.off()
 
-
+jpeg(file = "Residualplots Relartiv load in single workers.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+par(mfrow = c(2, 2))
+plot(rel_load2w)
+dev.off()
 
 
 #_____________________________________________________________________________#
@@ -2343,7 +2386,7 @@ AIC(rel_load1s, rel_load2s, rel_load3s)
 anova(rel_load1s, rel_load2s, rel_load3s)
 
 
-                    ###### B. Linear Mixed Model ####
+                ####### B. Linear Mixed Model ####
 #-----------------------------------------------------------------------------#
 # LMM based on best LRM structure, including raid-level random intercept
 
@@ -2371,7 +2414,7 @@ testUniformity(sim_rel_load_LMMs)
 testResiduals(sim_rel_load_LMMs)
 
 
-                        ###### D. Plot for LMM #####
+                ####### C. Plot for LMM #####
 #-----------------------------------------------------------------------------#
 # 1) Create ant_size sequence for prediction grid
 ant_seq_rel_loads <- seq(
@@ -2421,7 +2464,7 @@ dev.off()
 
 
 
-####### D. Plot for LRM`s ####
+                ####### D. Plot for LRM`s ####
 #-----------------------------------------------------------------------------#
 rel_load1s <- lm(log10(relativ_loading) ~ log10(ant_size), data = df_single)
 
@@ -2510,20 +2553,274 @@ dev.off()
 #_____________________________________________________________________________#
 
 
+###### 3.3.3 Relative load vs. Ant length (single workers) ######
+####### A. Linear Regression Models ####
+#-----------------------------------------------------------------------------#
+# base model – no additional main effects
+rel_load1_l <- lm(log10(relativ_loading) ~ log10(ant_length),
+                  data = df_single)
+
+summary(rel_load1_l)
+confint(rel_load1_l)           # 95% confidence intervals
+# plot(rel_load1_l)
+bptest(rel_load1_l)
+coeftest(rel_load1_l, vcov = vcovHC(rel_load1_l, type = "HC3"))
+
+# model with main effects
+rel_load2_l <- lm(log10(relativ_loading) ~ log10(ant_length) +
+                    ant_species + forest_type + prey_shape,
+                  data = df_single)
+
+summary(rel_load2_l)
+confint(rel_load2_l)
+# plot(rel_load2_l)
+bptest(rel_load2_l)
+coeftest(rel_load2_l, vcov = vcovHC(rel_load2_l, type = "HC3"))
+
+# selected model: interaction between ant length and species + main effects 
+rel_load3_l <- lm(log10(relativ_loading) ~ log10(ant_length) * ant_species +
+                    forest_type + prey_shape,
+                  data = df_single)
+
+summary(rel_load3_l)
+confint(rel_load3_l)
+bptest(rel_load3_l)
+coeftest(rel_load3_l, vcov = vcovHC(rel_load3_l, type = "HC3"))
+
+# model comparison (basis für Modellwahl: rel_load3_l)
+AIC(rel_load1_l, rel_load2_l, rel_load3_l)
+anova(rel_load1_l, rel_load2_l, rel_load3_l)
+# plot(rel_load3_l)
+
+
+
+####### B. Plots for LRM`s (selected model: rel_load3_l) ####
+#-----------------------------------------------------------------------------#
+# Basic plot 
+plot_rel_load_basic_lm <- ggplot(df_single,aes(x = log10(ant_length),
+                                               y = log10(relativ_loading),
+                                               colour = ant_species)) +
+  geom_point(alpha = 0.7, size = 0.7) +
+  geom_smooth(aes(colour = ant_species),
+              method = "lm", se = FALSE, linewidth = 1) +
+  clean_theme +
+  labs(x = "Ant length (log10 mm)",
+       y = "Relative loading (log10 prey mass / ant mass)",
+       colour = "Dorylus") +
+  lrm_legend_theme +
+  lrm_style
+
+plot_rel_load_basic_lm
+
+jpeg(file = "Relative Load vs. Ant Length LRM Basic.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_basic_lm
+dev.off()
+
+
+# Prediction for chosen model rel_load3_l
+# Sequenz for Ant length 
+ant_seq_rel_load_l <- seq(
+  from = min(df_single$ant_length, na.rm = TRUE),
+  to   = max(df_single$ant_length, na.rm = TRUE),
+  length.out = 100)
+
+# Prediction-Grid (for both species, primary forest, and mean prey_shape)
+newdat_rel_load_l <- expand.grid(
+  ant_length  = ant_seq_rel_load_l,
+  ant_species = levels(df_single$ant_species),
+  forest_type = "primary",
+  prey_shape  = mean(df_single$prey_shape, na.rm = TRUE))
+
+# LRM-Predictions (rel_load3_l)
+pred_rel_load_LRM <- predict(
+  rel_load3_l,
+  newdata  = newdat_rel_load_l,
+  interval = "confidence")
+
+newdat_rel_load_l$fit_log_rel_load <- pred_rel_load_LRM[, "fit"]
+newdat_rel_load_l$lwr_log_rel_load <- pred_rel_load_LRM[, "lwr"]
+newdat_rel_load_l$upr_log_rel_load <- pred_rel_load_LRM[, "upr"]
+
+# Plot with regression line and confidence bands 
+plot_rel_load_lengthLM <- ggplot(df_single, aes(x = ant_length,
+                                                y = relativ_loading,
+                                                colour = ant_species)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  geom_line(data = newdat_rel_load_l,aes(x = ant_length,
+                                         y = 10^fit_log_rel_load,
+                                         colour = ant_species),
+            linewidth = 1,
+            inherit.aes = FALSE) +
+  geom_ribbon( data = newdat_rel_load_l, aes( x = ant_length,
+                                              ymin = 10^lwr_log_rel_load,
+                                              ymax = 10^upr_log_rel_load,
+                                              fill = ant_species),
+               alpha = 0.4,
+               colour = NA,
+               inherit.aes = FALSE) +
+  scale_x_log10(name = "Ant length (mm)") +
+  scale_y_log10(name = "Relative loading (prey weight / ant weight)") +
+  labs(colour = "Dorylus", fill = "Dorylus") +
+  lrm_style +
+  lrm_legend_theme
+
+plot_rel_load_lengthLM
+
+jpeg(file = "Relative Load vs. Ant Length LRM.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+plot_rel_load_lengthLM
+dev.off()
+
+
+# Residualplots for rel_load3_l
+jpeg(file = "Residualplots Relative load LRM length.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+par(mfrow = c(2, 2))
+plot(rel_load3_l)
+dev.off()
 #=============================================================================
                 
 ##### 3.4 Loading in ALL Workers  #### 
 #Load per ant vs ant weight + single vs multiple carriers
 #=============================================================================#
-#setting species and forest as factor (aka categorical variable)
-df_multi$ant_species <- factor(df_multi$ant_species)
-df_multi$forest_type <- factor(df_multi$forest_type)
+               ######## A.  Model calculations ####
 
-#In prey_shape and ant_size are INF (when not log transformed data == 1.00)
-#We assume the index is just 0 here to get rid of errors 
-df_multi <- df_multi %>%
-  mutate(across(c(ant_size, prey_shape),
-                ~ ifelse(is.infinite(.), 0, .))) #if Inf/-Inf write 0 
+# It´s calculated for single and multiple carriers
+df["ant_loading"] <- df$ant_weight / df$prey_weight
+
+#relativ loading 
+df["relativ_loading"] <- df$ant_loading / (1000*df$ant_weight)
+
+#load per ant to get ant carring contribution in multiple carriers
+df["load_per_ant"] <- df$ant_loading / df$total_ant_number
+
+# categorize carrier state in each sample id 
+df$carrier_type <- ifelse(df$total_ant_number > 1, "multiple", "single")
+df$carrier_type <- factor(df$carrier_type)
 
 
+#Load per ant in multiple vs. single carriers 
+#herre we want to test if the diferent ant species behave differntly in their
+#load per ant between carrier typs 
+
+#Model 1 
+carrier_model_1 <- lm(log10(load_per_ant) ~ log10(1000*ant_weight) + carrier_type 
+                      + ant_species, data = df)
+summary(carrier_model_1)
+confint(carrier_model_1)
+bptest(carrier_model_1)
+coeftest(carrier_model_1, vcov = vcovHC(carrier_model_1, type = "HC3"))
+
+#Model 2
+carrier_model_2 <- lm(log10(load_per_ant) ~ log10(1000*ant_weight) + carrier_type 
+                      * ant_species, data = df)
+summary(carrier_model_2)
+confint(carrier_model_2)
+bptest(carrier_model_2)
+coeftest(carrier_model_2, vcov = vcovHC(carrier_model_2, type = "HC3"))
+
+#Model 3 
+carrier_model_3 <- lm(log10(load_per_ant) ~ log10(1000*ant_weight) + carrier_type 
+                    * ant_species + forest_type + prey_shape, data = df)
+
+summary(carrier_model_3)
+confint(carrier_model_3)
+bptest(carrier_model_3)
+coeftest(carrier_model_3, vcov = vcovHC(carrier_model_3, type = "HC3"))
+
+#model 4 <- use this one
+carrier_model_4 <- lm(log10(load_per_ant) ~ log10(1000*ant_weight) * carrier_type 
+                           * ant_species + forest_type + prey_shape, data = df)
+
+summary(carrier_model_4)
+confint(carrier_model_4)
+bptest(carrier_model_4)
+coeftest(carrier_model_4, vcov = vcovHC(carrier_model_4, type = "HC3"))
+anova(carrier_model_3, carrier_model_4)
+
+jpeg(file = "Residualplots load of carrier typ.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+par(mfrow = c(2, 2))
+plot(carrier_model_4)
+dev.off()
+
+
+AIC(carrier_model_1, carrier_model_2, 
+    carrier_model_3, carrier_model_4)
+#anova(carrier_model_1, carrier_model_2, carrier_model_3, carrier_model_4)
+#anova not usefull since models not nested 
+
+
+               ######## B.  LM Plot ####
+#=============================================================================#
+#setting up sequence 
+seq_load_per <- seq(
+  from = min(df$ant_weight, na.rm = TRUE),
+  to   = max(df$ant_weight, na.rm = TRUE),
+  length.out = 100
+)
+
+#Prediction grid (both species, primary forest, mean prey shape)
+#Note: kick out species, forest, shpae. make "new model" just for weidht and 
+#carrier typ and visualize this one. still talk about it in text 
+newdat_load_per <- expand.grid(
+  ant_weight     = seq_load_per,
+  carrier_type = levels(df$carrier_type),
+  ant_species  = levels(df$ant_species),
+  forest_type  = "secondary",
+  prey_shape   = mean(df$prey_shape, na.rm = TRUE)
+  )
+
+#Fixed-effect LM predictions
+pred_load_per <- predict(carrier_model_3,
+                                         newdata = newdat_load_per,
+                                         interval = "confidence")
+
+newdat_load_per$fit_log  <- pred_load_per[, "fit"]
+newdat_load_per$lwr_log  <- pred_load_per[, "lwr"]
+newdat_load_per$upr_log  <- pred_load_per[, "upr"]
+
+
+load_per_mod <- ggplot(df, aes(x = 1000 * ant_weight,
+                               y = load_per_ant)) +
+  # Punkte: Farbe = carrier_type, Form = ant_species
+  geom_point(aes(color = carrier_type,
+                 shape = ant_species),
+             alpha = 0.4,
+             size  = 1) +
+  
+  # Modell-Linien: gleiche Farbzuordnung, Linientyp = ant_species
+  geom_line(data = newdat_load_per,
+            aes(x        = 1000 * ant_weight,
+                y        = 10^fit_log,
+                color    = carrier_type,
+                linetype = ant_species,
+                group    = interaction(carrier_type, ant_species)),
+            linewidth = 0.8) +
+  scale_x_log10(name = "Ant weight [mg]") +
+  scale_y_log10(name = "Load per ant [mg]") 
+  
+  
+
+load_per_mod
+
+#==================================.===========================================
+
+                        #### 4 Transport of Prey  #### 
+
+#=============================================================================# 
+##### 4.1 Frequency s of Carries #####
+
+#creating a matrix with % of carriers
+carrier_frequencies <- df_dis %>%
+  group_by(ant_species, carrier_type) %>%
+  summarise(N = n(), .groups = "drop") %>%
+  group_by(ant_species) %>%
+  mutate(Percent = round(100 * N / sum(N), 2))
+
+carrier_frequencies
+
+tab <- table(df_dis$ant_species, df_dis$carrier_type)
+chisq.test(tab)
 
