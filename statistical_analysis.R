@@ -115,17 +115,26 @@ df_multi["load_per_ant"] <- df_multi$ant_loading / df_multi$total_ant_number
 #==============================================================================#
 ##### 1.1 Size differences between Ant species ##### 
 #==============================================================================#
-
+#Calculating means and 95CL on untransfomred data:
+by(df$ant_length, df$ant_species, function(x) t.test(x)$conf.int)
+by((df$ant_weight*1000), df$ant_species, function(x) t.test(x)$conf.int)
+by(df$ant_width, df$ant_species, function(x) t.test(x)$conf.int)
 
 #Welch t-test 
 t.test(log10(ant_length) ~ ant_species, data = df)
 t.test(log10(ant_weight*1000) ~ ant_species, data = df)
 t.test(log10(ant_width) ~ ant_species, data = df)
 
+t.test(ant_length ~ ant_species, data = df)
+t.test((ant_weight*1000) ~ ant_species, data = df)
+t.test(ant_width ~ ant_species, data = df)
+
+
+
 #Effektgröße (Cohen’s d)
-cohens_d(log10(ant_length) ~ ant_species, data = df)
-cohens_d(log10(ant_weight*1000) ~ ant_species, data = df)
-cohens_d(log10(ant_width) ~ ant_species, data = df)
+#cohens_d(log10(ant_length) ~ ant_species, data = df)
+#cohens_d(log10(ant_weight*1000) ~ ant_species, data = df)
+#cohens_d(log10(ant_width) ~ ant_species, data = df)
 
 #Kolmogorov–Smirnov-Test
 #compares whole distribution between two groups
@@ -710,7 +719,7 @@ ant_length_width <- ggplot(df, aes(x = ant_length,y = ant_width,
   labs( x     = "Ant body length [mm]",
         y     = "Ant head width [mm]",
         color = "Species" )
-
+ant_length_width
 
 jpeg(filename = "LRM_ant_length_width.jpg", width = 20, 
      height = 18, units = "cm", res = 300)
@@ -977,6 +986,23 @@ t7  <- t.test(log10(prey_width) ~ ant_species, data = df_dis)
 t8  <- t.test(log10(prey_weight*1000) ~ ant_species, data = df_dis)
 t9  <- t.test(log10(prey_area) ~ ant_species, data = df_dis)
 t10 <- t.test(log10(prey_shape) ~ ant_species, data = df_dis)
+
+#Calculating 95CL and means - ANT SPECIES
+by((df_dis$prey_length), df_dis$ant_species, function(x) t.test(x)$conf.int)
+by((df_dis$prey_width), df_dis$ant_species, function(x) t.test(x)$conf.int)
+by((df_dis$prey_weight*1000), df_dis$ant_species, function(x) t.test(x)$conf.int)
+by((df_dis$prey_shape), df_dis$ant_species, function(x) t.test(x)$conf.int)
+by((df_dis$prey_area), df_dis$ant_species, function(x) t.test(x)$conf.int)
+
+t.test(prey_length ~ ant_species, data = df_dis)
+t.test(prey_width ~ ant_species, data = df_dis)
+t.test((prey_weight*1000) ~ ant_species, data = df_dis)
+t.test(prey_area ~ ant_species, data = df_dis)
+t.test(prey_shape ~ ant_species, data = df_dis)
+
+
+
+
 
 #Extracting Results
 get_t_results <- function(test, metric, groupvar, data) {
@@ -1527,6 +1553,7 @@ coeftest(weight_sc2, vcov = vcovHC(weight_sc2, type = "HC3"))
 #test this to see if slope is different when species are considered
 weight_sc3 <- lm(log10(prey_weight*1000) ~ log10(ant_weight*1000) * ant_species+ 
                    forest_type +  prey_shape, data = df_single)
+
 
 summary(weight_sc3)
 confint(weight_sc3)
@@ -2737,7 +2764,7 @@ summary(carrier_model_4)
 confint(carrier_model_4)
 bptest(carrier_model_4)
 coeftest(carrier_model_4, vcov = vcovHC(carrier_model_4, type = "HC3"))
-anova(carrier_model_3, carrier_model_4)
+anova(carrier_model_1, carrier_model_2, carrier_model_3)
 
 jpeg(file = "Residualplots load of carrier typ.jpg",
      width = 20, height = 18, units = "cm", res = 300)
