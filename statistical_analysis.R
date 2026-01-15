@@ -718,12 +718,12 @@ ant_length_width <- ggplot(df, aes(x = ant_length,y = ant_width,
   scale_x_log10() + 
   scale_y_log10() +
   lrm_style +                       #  universal lrm style defined in 1.2.1.
-  labs( x     = "Ant body length [mm] (SE = 0.0054)",
-        y     = "Ant head width [mm] (SE = 0.0047)",
+  labs( x     = "Ant body length (±0.0054 SE) [mm]",
+        y     = "Ant head width (±0.0047 SE) [mm]",
         color = "Species" )
 ant_length_width
 
-jpeg(filename = "LRM_ant_length_width.jpg", width = 20, 
+jpeg(filename = "LRM_ant_length_width_final.jpg", width = 20, 
      height = 18, units = "cm", res = 300)
 ant_length_width
 dev.off()
@@ -752,7 +752,7 @@ AIC(ant_biomet_width1, ant_biomet_width2,
 
 
 
-                                # D. Plot LMM
+            ######### D. Plot LMM ####
 #NEEDS MASSIV BUG FIX
 #predict seems to not hav ant_weight and it seems not to be in the data frame.
 #Maybe this issue comes from the lmm model and the previous changes in Intercepter 
@@ -1141,7 +1141,7 @@ boxp_style_prey <- list(
       width    =  0.65 ,         # distance species boxes within forest typ
       preserve = "single")),
   dorylus_colour,
-  theme_clean(base_size = 18) %+replace% theme(
+  theme_clean(base_size = 30) %+replace% theme(
     panel.grid.major   = element_blank(),
     panel.grid.minor   = element_blank(),
     panel.grid.major.x = element_blank(),
@@ -1174,7 +1174,7 @@ boxp_legend_theme_prey <- list (theme(
     legend.key.size      = unit(0.7, "lines"),      # compact legend
     legend.key.spacing   = unit(0.5, "lines"),
     legend.key.spacing.x = unit(1.2, "lines"),
-    legend.text          = element_text(size = 18, face = "italic"),
+    legend.text          = element_text(size = 22, face = "italic"),
     legend.title         =  NULL, 
     legend.text.align  = 0.5,
     legend.title.align = 0.5), 
