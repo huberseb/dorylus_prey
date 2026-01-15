@@ -94,7 +94,7 @@ df_multi <- df %>%
 ############## Ant loading (prey weight / ant weight)
 # Measure of how much an ant carries per unit mass of the ant
 # It´s calculated for single and multiple carriers
-df_single["ant_loading"] <- df_single$ant_weight / df_single$prey_weight
+df_single["ant_loading"] <- df_single$prey_weight / df_single$ant_weight 
 
 
 ############## Relative loading single (loading / ant weight)
