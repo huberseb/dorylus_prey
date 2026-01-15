@@ -1681,30 +1681,33 @@ dev.off()
 
 ####### 3.1.4 LRM Plot - most basic #####
 
-plot_weight_sc_basic <- ggplot(df_single, aes(x = log10(1000*ant_weight),
-                                              y = log10(1000*prey_weight),
+plot_weight_sc_basic <- ggplot(df_single, aes(x = (1000*ant_weight),
+                                              y = (1000*prey_weight),
                                               color = ant_species)) +
-  #sets points  
-  geom_point(alpha = 0.7, size = 0.7) +  
-  
-  #regression line, se sets confidence area 
-  geom_smooth (method = "lm", se = TRUE, linewidth = .7)+  
-  
-  #add horizontel reference line   
-  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
+  geom_point(alpha = 0.7, size = 1) +  
+  geom_smooth (aes(color = NULL), method = "lm", se = TRUE,
+               linewidth = .5, colour = "grey15", alpha = 0.4, fill = "grey30") +  
+  #geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
   labs(
-    x = "Ant weight (log10, mg)",
-    y = "Prey weight (log10, mg)",
-    color = "Dorylus"
-  ) +
+    x = "Ant weight (±0.0329 SE) [mg]",
+    y = "Prey weight (±0.0389 SE) [mg]",
+    color = "Dorylus" ) +
+  scale_fill_identity(guide = "none") +
+  scale_x_log10()+
+  scale_y_log10()+
   dorylus_colour +
+  guides(color = guide_legend(override.aes = list(size = 2.5)))+
   theme_classic(base_size = 14) +
   theme(
-    legend.position = "right",
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
-    axis.title = element_text(size = 14),
-    axis.text = element_text(size = 12)) 
+    legend.position = c(0.98, 0.02),
+    legend.justification = c("right", "bottom"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16, face = "italic"),
+    #legend.key.size = unit(5.0, "lines"),
+    axis.title = element_text(size = 20),
+    axis.text = element_text(size = 20)) 
+
+plot_weight_sc_basic
 
 # file save
 jpeg(file = "Ant vs Prey Weight LRM Basic.jpg",
@@ -1727,10 +1730,10 @@ dev.off()
 
 
 
-####### 3.1.5 LRM Plot - for best fitting model (weight_sc2) ######
+####### 3.1.5 LRM Plot - for best fitting model (weight_sc3) ######
         #------------Lrgend needs fixing in thi----------#
 # LRM model 3 prediction
-pred_weight_LRM <- predict(weight_sc2, newdata  = newdat_weight_sc_LM,
+pred_weight_LRM <- predict(weight_sc3, newdata  = newdat_weight_sc_LM,
                    interval = "confidence")
 
 newdat_weight_sc_LM$fit_log_prey <- pred_weight_LRM[, "fit"]
@@ -2311,18 +2314,31 @@ dev.off()
 rel_load1 <- lm(log10(relativ_loading) ~ log10(1000*ant_weight), 
                 data = df_single)
 
-# --- Basisplot ---
+                        #######  --- Basisplot --- ####### 
+
 plot_rel_load_basic_lm <- ggplot(df_single,
-  aes(log10(1000*ant_weight), log10(relativ_loading), colour = ant_species)) +
-  geom_point(alpha = .7, size = .7) +
-  geom_smooth(aes(colour = ant_species), method = "lm", se = FALSE,
-              linewidth = 1) +
-  clean_theme +
-  labs(x = "Ant weight",
-       y = "Relative loading",
-       colour = "Dorylus") +
-  lrm_legend_theme +
-  lrm_style
+  aes((1000*ant_weight), relativ_loading, colour = ant_species)) +
+  geom_point(alpha = 0.7, size = 1) +  
+  geom_smooth (aes(color = NULL), method = "lm", se = TRUE,
+               linewidth = .5, colour = "grey15", alpha = 0.4, fill = "grey30")+  
+  labs(
+    x = "Ant weight (±0.0329 SE) [mg]",
+    y = expression(Relative~Loading~(prey~weight~"/"~ant~weight^2~"\u00B1"~0.0389~SE)~"["*mg*"]"),
+    color = "Dorylus" ) +
+  #scale_fill_identity(guide = "none") +
+  scale_x_log10()+
+  scale_y_log10()+
+  dorylus_colour +
+  guides(color = guide_legend(override.aes = list(size = 2.5)))+
+  theme_classic(base_size = 14) +
+  theme(
+    legend.position = c(0.98, 0.92),
+    legend.justification = c("right", "top"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16, face = "italic"),
+    #legend.key.size = unit(5.0, "lines"),
+    axis.title = element_text(size = 20),
+    axis.text = element_text(size = 20)) 
 
 plot_rel_load_basic_lm
 
@@ -2331,7 +2347,7 @@ jpeg(file = "Relative Load vs. Ant Weight LRM Basic.jpg",
 plot_rel_load_basic_lm
 dev.off()
 
-
+                        #######  --- Model 2  --- ####### 
 #  Vorhersagen (for model 2 - fittest ) 
 pred_rel_load_LRM <- predict(
   rel_load2w,
@@ -2583,7 +2599,7 @@ dev.off()
 
 
 ###### 3.3.3 Relative load vs. Ant length (single workers) ######
-####### A. Linear Regression Models ####
+                ####### A. Linear Regression Models ####
 #-----------------------------------------------------------------------------#
 # base model – no additional main effects
 rel_load1_l <- lm(log10(relativ_loading) ~ log10(ant_length),
@@ -2623,7 +2639,7 @@ anova(rel_load1_l, rel_load2_l, rel_load3_l)
 
 
 
-####### B. Plots for LRM`s (selected model: rel_load3_l) ####
+                ####### B. Plots for LRM`s (selected model: rel_load3_l) ####
 #-----------------------------------------------------------------------------#
 # Basic plot 
 plot_rel_load_basic_lm <- ggplot(df_single,aes(x = log10(ant_length),
@@ -2713,10 +2729,10 @@ dev.off()
 ##### 3.4 Loading in ALL Workers  #### 
 #Load per ant vs ant weight + single vs multiple carriers
 #=============================================================================#
-               ######## A.  Model calculations ####
+###### Importatn Values ######               
 
 # It´s calculated for single and multiple carriers
-df["ant_loading"] <- df$ant_weight / df$prey_weight
+df["ant_loading"] <- (1000*df$prey_weight) / (1000*df$ant_weight)
 
 #relativ loading 
 df["relativ_loading"] <- df$ant_loading / (1000*df$ant_weight)
@@ -2728,7 +2744,7 @@ df["load_per_ant"] <- df$ant_loading / df$total_ant_number
 df$carrier_type <- ifelse(df$total_ant_number > 1, "multiple", "single")
 df$carrier_type <- factor(df$carrier_type)
 
-
+               ######## A.  Model calculations ####
 #Load per ant in multiple vs. single carriers 
 #herre we want to test if the diferent ant species behave differntly in their
 #load per ant between carrier typs 
@@ -2758,30 +2774,43 @@ confint(carrier_model_3)
 bptest(carrier_model_3)
 coeftest(carrier_model_3, vcov = vcovHC(carrier_model_3, type = "HC3"))
 
-#model 4 <- use this one
-carrier_model_4 <- lm(log10(load_per_ant) ~ log10(1000*ant_weight) * carrier_type 
-                           * ant_species + forest_type + prey_shape, data = df)
 
-summary(carrier_model_4)
-confint(carrier_model_4)
-bptest(carrier_model_4)
-coeftest(carrier_model_4, vcov = vcovHC(carrier_model_4, type = "HC3"))
-anova(carrier_model_1, carrier_model_2, carrier_model_3)
 
 jpeg(file = "Residualplots load of carrier typ.jpg",
      width = 20, height = 18, units = "cm", res = 300)
 par(mfrow = c(2, 2))
-plot(carrier_model_4)
+plot(carrier_model_3)
 dev.off()
 
 
 AIC(carrier_model_1, carrier_model_2, 
-    carrier_model_3, carrier_model_4)
+    carrier_model_3, )
 #anova(carrier_model_1, carrier_model_2, carrier_model_3, carrier_model_4)
 #anova not usefull since models not nested 
 
+               ######## B.  LRM Basic Plot ####
 
-               ######## B.  LM Plot ####
+absolute_load_basic <- ggplot(df, aes(x = log10(1000*ant_weight),
+                                                   y = log10(load_per_ant))) +
+  geom_point(aes(shape = ant_species, colour = carrier_type),
+             alpha = 0.7, size = 0.8) +
+  geom_smooth(aes(colour = carrier_type),
+              method = "lm", se = TRUE, linewidth = 0.7,
+              alpha = 0.25) +
+  #scale_x_log10() +
+  #scale_y_log10() +
+  theme_classic(base_size = 14) +
+  labs(x = "Ant weight (log10, mg)",
+       y = "Load per ant (log10, mg)",
+       shape = "Dorylus",
+       colour = "Carrier type")
+
+absolute_load_basic
+
+
+
+
+               ######## C.  LM Plot - not working ####
 #=============================================================================#
 #setting up sequence 
 seq_load_per <- seq(
@@ -2833,6 +2862,12 @@ load_per_mod <- ggplot(df, aes(x = 1000 * ant_weight,
   
 
 load_per_mod
+
+
+
+##### 3.5 Combining all Plots  #### 
+
+
 
 #==================================.===========================================
 
