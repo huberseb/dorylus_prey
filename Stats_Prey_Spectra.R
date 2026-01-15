@@ -176,7 +176,7 @@ summary(spmod)
 # very clear sign that the niche is almost totally overlapping.
 
 plot(spmod, type = "hist") 
-# the plotting function kinda sucks. Don't include in papers.
+# the plotting function looks wired - Don't include in papers.
 
 ##### 1.4 Bipartite plots #####
 # Convert Diet frequency to proportional data - only visual
