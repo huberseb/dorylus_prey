@@ -708,16 +708,18 @@ lrm_style <- list(
 ant_length_width <- ggplot(df, aes(x = ant_length,y = ant_width,
                                     colour = ant_species)) +
   geom_point(alpha = 0.5, size = 1.5) +
-  geom_smooth(aes(colour = NULL),   # no species-specific regression
+  geom_smooth(aes(colour = FALSE),   # no species-specific regression
               method = "lm",
               se = TRUE,
-              linewidth = 1,
+              fill =  "red", 
+              alpha = 1,
+              linewidth = 0.5,
               colour = "grey9") +
   scale_x_log10() + 
   scale_y_log10() +
   lrm_style +                       #  universal lrm style defined in 1.2.1.
-  labs( x     = "Ant body length [mm]",
-        y     = "Ant head width [mm]",
+  labs( x     = "Ant body length [mm] (SE = 0.0054)",
+        y     = "Ant head width [mm] (SE = 0.0047)",
         color = "Species" )
 ant_length_width
 
