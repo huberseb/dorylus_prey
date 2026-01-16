@@ -1684,7 +1684,7 @@ dev.off()
 plot_weight_sc_basic <- ggplot(df_single, aes(x = (1000*ant_weight),
                                               y = (1000*prey_weight),
                                               color = ant_species)) +
-  geom_point(alpha = 0.7, size = 1) +  
+  geom_point(alpha = 0.9, size = 1.5) +  
   geom_smooth (aes(color = NULL), method = "lm", se = TRUE,
                linewidth = .5, colour = "grey15", alpha = 0.4, fill = "grey30") +  
   #geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, color = "red") +
@@ -2318,12 +2318,16 @@ rel_load1 <- lm(log10(relativ_loading) ~ log10(1000*ant_weight),
 
 plot_rel_load_basic_lm <- ggplot(df_single,
   aes((1000*ant_weight), relativ_loading, colour = ant_species)) +
-  geom_point(alpha = 0.7, size = 1) +  
+  geom_point(alpha = 0.9, size = 1) +  
   geom_smooth (aes(color = NULL), method = "lm", se = TRUE,
                linewidth = .5, colour = "grey15", alpha = 0.4, fill = "grey30")+  
   labs(
     x = "Ant weight (±0.0329 SE) [mg]",
-    y = expression(Relative~Loading~(prey~weight~"/"~ant~weight^2~"\u00B1"~0.0389~SE)~"["*mg*"]"),
+    y = expression(
+      Relative~Loading~~
+        frac(scriptstyle(prey~weight), scriptstyle(ant~weight^2))~~
+        "(" * "\u00B1"~0.0389~SE * ")"~~
+        "["*mg^-1*"]"),
     color = "Dorylus" ) +
   #scale_fill_identity(guide = "none") +
   scale_x_log10()+
@@ -2332,7 +2336,7 @@ plot_rel_load_basic_lm <- ggplot(df_single,
   guides(color = guide_legend(override.aes = list(size = 2.5)))+
   theme_classic(base_size = 14) +
   theme(
-    legend.position = c(0.98, 0.92),
+    legend.position = c(0.98, 0.98),
     legend.justification = c("right", "top"),
     legend.title = element_blank(),
     legend.text = element_text(size = 16, face = "italic"),
@@ -2342,7 +2346,7 @@ plot_rel_load_basic_lm <- ggplot(df_single,
 
 plot_rel_load_basic_lm
 
-jpeg(file = "Relative Load vs. Ant Weight LRM Basic.jpg",
+jpeg(file = "Relative Load vs. Ant Weight LRM Basic_final.jpg",
      width = 20, height = 18, units = "cm", res = 300)
 plot_rel_load_basic_lm
 dev.off()
@@ -2737,8 +2741,15 @@ df["ant_loading"] <- (1000*df$prey_weight) / (1000*df$ant_weight)
 #relativ loading 
 df["relativ_loading"] <- df$ant_loading / (1000*df$ant_weight)
 
+
 #load per ant to get ant carring contribution in multiple carriers
 df["load_per_ant"] <- df$ant_loading / df$total_ant_number
+
+# loading in multiple
+df["absolut_ant_loading"] <- (1000*df$prey_weight) / (1000*df$sum_ant_weight)
+
+#absolut loading
+df["absolut_load_per_ant"] <- df$absolut_ant_loading / df$total_ant_number
 
 # categorize carrier state in each sample id 
 df$carrier_type <- ifelse(df$total_ant_number > 1, "multiple", "single")
@@ -2784,35 +2795,61 @@ dev.off()
 
 
 AIC(carrier_model_1, carrier_model_2, 
-    carrier_model_3, )
-#anova(carrier_model_1, carrier_model_2, carrier_model_3, carrier_model_4)
-#anova not usefull since models not nested 
+    carrier_model_3)
+anova(carrier_model_1, carrier_model_2, carrier_model_3)
 
-               ######## B.  LRM Basic Plot ####
 
-absolute_load_basic <- ggplot(df, aes(x = log10(1000*ant_weight),
-                                                   y = log10(load_per_ant))) +
+               ######## B.  LRM Basic Plot - deeply flawed####
+
+absolute_load_basic <- ggplot(df, aes(x = (1000*ant_weight),
+                                                   y = load_per_ant)) +
   geom_point(aes(shape = ant_species, colour = carrier_type),
-             alpha = 0.7, size = 0.8) +
+             alpha = 0.9, size = 1) +
   geom_smooth(aes(colour = carrier_type),
-              method = "lm", se = TRUE, linewidth = 0.7,
-              alpha = 0.25) +
-  #scale_x_log10() +
-  #scale_y_log10() +
+              method = "lm", se = TRUE, linewidth = 0.5,
+              alpha = 0.4, fill = "grey30") +
+  scale_x_log10() +
+  scale_y_log10() +
   theme_classic(base_size = 14) +
-  labs(x = "Ant weight (log10, mg)",
-       y = "Load per ant (log10, mg)",
+  guides(color = guide_legend(override.aes = list(fill = NA, size = 2.5)),
+         shape = guide_legend(override.aes = list(size = 2.5)))+
+  theme(
+    legend.position = c(0.98, 0.98),
+    legend.justification = c("right", "top"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16, face = "italic"),
+    legend.key = element_rect(fill = NA, colour = NA),
+    axis.title = element_text(size = 20),
+    axis.text = element_text(size = 20)) +
+  labs(x = "Ant weight (±0.0329 SE) [mg]",
+       y = expression(
+         Load~per~Ant~~
+           frac(scriptstyle(prey~weight), scriptstyle(ant~weight))~
+           "/"~scriptstyle(total~number~ants)~~
+           "(" * "\u00B1"~0.0389~SE * ")"
+       ),
        shape = "Dorylus",
        colour = "Carrier type")
-
 absolute_load_basic
+
+
+# file save
+jpeg(file = "Load per Ant_final.jpg",
+     width = 20, height = 18, units = "cm", res = 300)
+absolute_load_basic
+dev.off()
+
+
 
 
 
 
                ######## C.  LM Plot - not working ####
 #=============================================================================#
-#setting up sequence 
+carreir_model_plot <- lm(log10(load_per_ant) ~ log10(1000*ant_weight)
+                         + carrier_type * ant_species, data = df)
+  
+  #setting up sequence 
 seq_load_per <- seq(
   from = min(df$ant_weight, na.rm = TRUE),
   to   = max(df$ant_weight, na.rm = TRUE),
@@ -2825,13 +2862,13 @@ seq_load_per <- seq(
 newdat_load_per <- expand.grid(
   ant_weight     = seq_load_per,
   carrier_type = levels(df$carrier_type),
-  ant_species  = levels(df$ant_species),
-  forest_type  = "secondary",
-  prey_shape   = mean(df$prey_shape, na.rm = TRUE)
+  ant_species  = levels(df$ant_species)
+  #forest_type  = "primary",
+  #prey_shape   = mean(df$prey_shape, na.rm = TRUE)
   )
 
 #Fixed-effect LM predictions
-pred_load_per <- predict(carrier_model_3,
+pred_load_per <- predict(carreir_model_plot,
                                          newdata = newdat_load_per,
                                          interval = "confidence")
 
@@ -2839,34 +2876,104 @@ newdat_load_per$fit_log  <- pred_load_per[, "fit"]
 newdat_load_per$lwr_log  <- pred_load_per[, "lwr"]
 newdat_load_per$upr_log  <- pred_load_per[, "upr"]
 
+cols <- c(multiple = "#F8766D", single = "#00BFC4")
 
-load_per_mod <- ggplot(df, aes(x = 1000 * ant_weight,
-                               y = load_per_ant)) +
-  # Punkte: Farbe = carrier_type, Form = ant_species
+load_per_mod <- ggplot(df, aes(x = 1000 * ant_weight, y = load_per_ant)) +
   geom_point(aes(color = carrier_type,
                  shape = ant_species),
              alpha = 0.4,
-             size  = 1) +
+             size  = 1.3) +
+  geom_ribbon(data = newdat_load_per,
+              aes(x = 1000 * ant_weight,
+                 ymin = 10^lwr_log, ymax = 10^upr_log,
+                 fill = carrier_type,
+                  group = interaction(carrier_type, ant_species)),
+            alpha = 0.22, linewidth = 0.4, inherit.aes = FALSE, show.legend = FALSE) +
   
-  # Modell-Linien: gleiche Farbzuordnung, Linientyp = ant_species
   geom_line(data = newdat_load_per,
             aes(x        = 1000 * ant_weight,
                 y        = 10^fit_log,
                 color    = carrier_type,
                 linetype = ant_species,
                 group    = interaction(carrier_type, ant_species)),
-            linewidth = 0.8) +
-  scale_x_log10(name = "Ant weight [mg]") +
-  scale_y_log10(name = "Load per ant [mg]") 
+            linewidth = 1) +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_classic(base_size = 14) +
+  guides(color = guide_legend(order =2 , override.aes = list(fill = NA, size = 2.5)),
+         shape = guide_legend(order =3 , override.aes = list(size = 2.5)),
+         linetype = guide_legend(order =1 , override.aes = list(linewidth = 1.2)))+
+  scale_color_manual(values = cols) +
+  scale_fill_manual(values = cols) +
+  theme(
+    legend.position = "bottom",
+    legend.justification = "center",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16, face = "italic"),
+    legend.key = element_rect(fill = NA, colour = NA),
+    axis.title = element_text(size = 20),
+    axis.text = element_text(size = 20)) +
+  labs(x = "Ant weight (±0.0183 SE) [mg]",
+       y = expression(
+         Load~per~Ant~~
+           frac(scriptstyle(prey~weight), scriptstyle(ant~weight))~
+           "/"~scriptstyle(total~number~ants)~~
+           "(" * "\u00B1"~0.0166~SE * ")"))
   
-  
-
 load_per_mod
 
+# file save
+jpeg(file = "Load per Ant_final_2.jpg",
+     width = 30, height = 25, units = "cm", res = 300)
+load_per_mod
+dev.off()
+
+###### Equations of predicted regression lines####
+b <- coef(carreir_model_plot)[grep("log10\\(1000\\s*\\*\\s*ant_weight\\)",
+                                   names(coef(carreir_model_plot)))]
+b
+new0 <- expand.grid(
+  ant_weight   = 0.001,  # => X = 1000*ant_weight = 1
+  carrier_type = levels(df$carrier_type),
+  ant_species  = levels(df$ant_species)
+)
+
+a <- predict(carreir_model_plot, newdata = new0)  # das sind die a_Gruppen (auf log10-Skala)
+
+eq_tab <- cbind(new0, a = a, b = as.numeric(b))
+eq_tab$k <- 10^eq_tab$a   # Faktor auf Originalskala
+
+# hübsch runden (z.B. 4 Nachkommastellen)
+eq_tab$a <- round(eq_tab$a, 4)
+eq_tab$b <- round(eq_tab$b, 4)
+eq_tab$k <- signif(eq_tab$k, 4)
+
+eq_tab
+
+Xname <- "X (= 1000*ant_weight in mg)"
+
+eq_tab$equation <- sprintf(
+  "load_per_ant = %s * %s^(%0.4f)",
+  eq_tab$k, Xname, eq_tab$b
+)
+
+eq_tab[, c("carrier_type","ant_species","a","b","k","equation")]
 
 
-##### 3.5 Combining all Plots  #### 
+##### 3.5 Combining all Allemtry LRM Plots  #### 
 
+bottom_row <- plot_rel_load_basic_lm + plot_spacer() + absolute_load_basic +
+  plot_layout(widths = c(1, 0.1, 1))  
+
+
+LRM_Master_Thesis <- plot_weight_sc_basic / plot_spacer() / bottom_row +
+  plot_layout(heights = c(1, 0.1, 1))
+
+# file save
+jpeg(file = "LRM_Master_Thesis.jpg",
+     width = 45, height = 45, units = "cm", res = 300)
+LRM_Master_Thesis
+dev.off()
 
 
 #==================================.===========================================
